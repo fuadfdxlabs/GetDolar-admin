@@ -97,6 +97,9 @@ test("keeps member list paginated and searchable", async () => {
   assert.match(table, /createPaymentProofPdf/);
   assert.match(table, /application\/pdf/);
   assert.match(table, /bukti-pembayaran-\$\{payment\.id\}\.pdf/);
+  assert.match(table, /SUDAH DIBAYAR/);
+  assert.match(table, /Helvetica-Bold/);
+  assert.match(table, /Diterima Bersih/);
   assert.match(table, /Tandai terkirim/);
   assert.match(table, /Batalkan terkirim/);
   assert.match(table, /Reset status terkirim/);

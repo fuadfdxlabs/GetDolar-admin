@@ -146,32 +146,130 @@ const wrapPdfLine = (value: string, limit = 78) => {
 };
 
 const createPaymentProofPdf = (payment: PaymentProofRow) => {
-  const lines = createPaymentProofLines(payment).flatMap((line) =>
-    line ? wrapPdfLine(line) : [""],
-  );
-  let y = 792;
-  const content = [
-    "BT",
-    "/F1 18 Tf",
-    "72 792 Td",
-    "(GET DOLAR) Tj",
-    "/F1 12 Tf",
+  const paymentDate = formatPaymentDate();
+  const details = [
+    ["ID Member", displayText(payment.memberId)],
+    ["No. Invoice", payment.id],
+    ["Periode", payment.period],
+    ["Revenue ($)", formatDollar(payment.revenue)],
+    ["Referral ($)", formatDollar(payment.referral)],
+    ["Total Dollar ($)", formatDollar(payment.totalDollar)],
+    ["Kurs", formatRupiah(payment.kurs).replace("Rp", "Rp ")],
+    ["Total Rupiah", formatRupiah(payment.totalRupiah)],
+    ["Biaya Admin", formatRupiah(payment.adminFee)],
+    ["Metode Pembayaran", hasValue(payment.method) ? payment.method : "-"],
+    [
+      "Tujuan Pembayaran",
+      hasValue(payment.destination) ? payment.destination : "-",
+    ],
+    ["Tanggal Pembayaran", paymentDate],
   ];
 
-  lines.slice(1).forEach((line) => {
-    y -= line ? 18 : 12;
-    content.push(`1 0 0 1 72 ${y} Tm`);
-    content.push(`(${escapePdfText(line)}) Tj`);
+  const content: string[] = [];
+  const fill = (r: number, g: number, b: number) =>
+    content.push(`${r} ${g} ${b} rg`);
+  const stroke = (r: number, g: number, b: number) =>
+    content.push(`${r} ${g} ${b} RG`);
+  const rect = (x: number, y: number, width: number, height: number) =>
+    content.push(`${x} ${y} ${width} ${height} re f`);
+  const line = (x1: number, y1: number, x2: number, y2: number) => {
+    content.push(`${x1} ${y1} m`);
+    content.push(`${x2} ${y2} l`);
+    content.push("S");
+  };
+  const text = (
+    value: string,
+    x: number,
+    y: number,
+    size = 11,
+    font = "F1",
+  ) => {
+    content.push("BT");
+    content.push(`/${font} ${size} Tf`);
+    content.push(`1 0 0 1 ${x} ${y} Tm`);
+    content.push(`(${escapePdfText(value)}) Tj`);
+    content.push("ET");
+  };
+  const rightText = (
+    value: string,
+    right: number,
+    y: number,
+    size = 11,
+    font = "F1",
+  ) => {
+    const width = value.length * size * 0.52;
+    text(value, right - width, y, size, font);
+  };
+
+  fill(0.96, 0.98, 0.95);
+  rect(0, 0, 595, 842);
+  fill(0.09, 0.13, 0.1);
+  rect(0, 732, 595, 110);
+  fill(0.9, 1, 0.48);
+  rect(0, 732, 595, 7);
+  fill(1, 1, 1);
+  text("GET DOLAR", 46, 792, 26, "F2");
+  text("BUKTI PEMBAYARAN", 46, 768, 13, "F2");
+  fill(0.15, 0.83, 0.4);
+  rect(432, 784, 108, 26);
+  fill(0.04, 0.15, 0.07);
+  text("SUDAH DIBAYAR", 446, 793, 10, "F2");
+
+  fill(1, 1, 1);
+  rect(36, 622, 523, 82);
+  fill(0.09, 0.13, 0.1);
+  text("Diterima Bersih", 58, 670, 11, "F2");
+  text(formatRupiah(payment.amount), 58, 642, 26, "F2");
+  fill(0.38, 0.44, 0.4);
+  rightText(`No. Invoice: ${payment.id}`, 535, 674, 10, "F1");
+  rightText(`Tanggal: ${paymentDate}`, 535, 652, 10, "F1");
+
+  fill(1, 1, 1);
+  rect(36, 116, 523, 478);
+  fill(0.97, 0.98, 0.96);
+  rect(36, 552, 523, 42);
+  fill(0.09, 0.13, 0.1);
+  text(payment.customer, 58, 570, 15, "F2");
+  fill(0.38, 0.44, 0.4);
+  text(`Pembayaran periode ${payment.period} sudah kami proses.`, 58, 538, 10);
+
+  stroke(0.86, 0.89, 0.83);
+  content.push("0.8 w");
+  line(58, 520, 537, 520);
+
+  let y = 497;
+  details.forEach(([label, value], index) => {
+    if (index % 2 === 1) {
+      fill(0.98, 0.99, 0.97);
+      rect(52, y - 8, 491, 26);
+    }
+    fill(0.38, 0.44, 0.4);
+    text(label, 62, y, 9, "F2");
+    fill(0.09, 0.13, 0.1);
+    wrapPdfLine(value, 48).forEach((item, lineIndex) => {
+      text(item, 220, y - lineIndex * 12, 10, "F1");
+    });
+    y -= 30;
   });
 
-  content.push("ET");
+  fill(0.9, 1, 0.48);
+  rect(52, 158, 491, 38);
+  fill(0.04, 0.15, 0.07);
+  text(`DITERIMA BERSIH: ${formatRupiah(payment.amount)}`, 66, 172, 13, "F2");
+
+  fill(0.09, 0.13, 0.1);
+  text("Diproses oleh GET DOLAR", 52, 88, 10, "F2");
+  fill(0.38, 0.44, 0.4);
+  text("Terima kasih atas partisipasi Anda.", 52, 68, 10);
+  text("Semoga sukses dan penghasilan terus meningkat.", 52, 52, 10);
 
   const stream = content.join("\n");
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>",
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
     `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
   ];
   const parts = ["%PDF-1.4\n"];
