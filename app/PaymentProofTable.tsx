@@ -105,13 +105,25 @@ const createPaymentProofLines = (payment: PaymentProofRow) => [
   "Semoga sukses dan penghasilan terus meningkat.",
 ];
 
-const createWhatsappMessage = (payment: PaymentProofRow) =>
-  createPaymentProofLines(payment).join("\n");
+const createWhatsappMessage = (payment: PaymentProofRow, proofUrl: string) =>
+  [
+    "GET DOLAR",
+    "BUKTI PEMBAYARAN",
+    "",
+    `Halo ${payment.customer}, pembayaran periode ${payment.period} sudah kami proses.`,
+    `Diterima bersih: ${formatRupiah(payment.amount)}`,
+    `No. Invoice: ${payment.id}`,
+    "",
+    "Untuk detail lengkap, klik link invoice berikut:",
+    proofUrl,
+    "",
+    "Diproses oleh GET DOLAR",
+  ].join("\n");
 
-const createWhatsappUrl = (payment: PaymentProofRow) =>
+const createWhatsappUrl = (payment: PaymentProofRow, proofUrl: string) =>
   payment.phone
     ? `https://wa.me/${payment.phone}?text=${encodeURIComponent(
-        createWhatsappMessage(payment),
+        createWhatsappMessage(payment, proofUrl),
       )}`
     : "#";
 
@@ -254,41 +266,23 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
     });
   };
 
+  const getPaymentProofUrl = (payment: PaymentProofRow) =>
+    `${window.location.origin}${createPaymentProofPath(payment)}`;
+
   const openWhatsapp = (payment: PaymentProofRow) => {
     if (!payment.phone) {
       return;
     }
 
-    window.open(createWhatsappUrl(payment), "_blank", "noopener,noreferrer");
-  };
-
-  const getPaymentProofUrl = (payment: PaymentProofRow) =>
-    `${window.location.origin}${createPaymentProofPath(payment)}`;
-
-  const openPaymentProof = (payment: PaymentProofRow) => {
-    window.open(getPaymentProofUrl(payment), "_blank", "noopener,noreferrer");
-  };
-
-  const sendPaymentProofLink = (payment: PaymentProofRow) => {
-    if (!payment.phone) {
-      return;
-    }
-
-    const message = [
-      "GET DOLAR",
-      "BUKTI PEMBAYARAN",
-      "",
-      `Halo ${payment.customer}, bukti pembayaran periode ${payment.period} bisa dibuka di link berikut:`,
-      getPaymentProofUrl(payment),
-      "",
-      "Diproses oleh GET DOLAR",
-    ].join("\n");
-
     window.open(
-      `https://wa.me/${payment.phone}?text=${encodeURIComponent(message)}`,
+      createWhatsappUrl(payment, getPaymentProofUrl(payment)),
       "_blank",
       "noopener,noreferrer",
     );
+  };
+
+  const openPaymentProof = (payment: PaymentProofRow) => {
+    window.open(getPaymentProofUrl(payment), "_blank", "noopener,noreferrer");
   };
 
   const resetSentStatuses = () => {
@@ -404,7 +398,10 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
           <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
             <div className="rounded-lg bg-white p-4 text-[#172019]">
               <pre className="whitespace-pre-wrap font-sans text-sm leading-6">
-                {createWhatsappMessage(defaultPreviewPayment)}
+                {createWhatsappMessage(
+                  defaultPreviewPayment,
+                  createPaymentProofPath(defaultPreviewPayment),
+                )}
               </pre>
             </div>
             <div className="flex flex-col justify-between gap-3">
@@ -439,15 +436,6 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
               >
                 Buka PDF
               </button>
-              {defaultPreviewPayment.phone ? (
-                <button
-                  className="inline-flex h-11 items-center justify-center rounded-md border border-white/20 px-4 text-sm font-bold text-white"
-                  onClick={() => sendPaymentProofLink(defaultPreviewPayment)}
-                  type="button"
-                >
-                  Kirim link PDF
-                </button>
-              ) : null}
             </div>
           </div>
         </div>
@@ -543,15 +531,6 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 </button>
                 {payment.phone ? (
                   <button
-                    className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
-                    onClick={() => sendPaymentProofLink(payment)}
-                    type="button"
-                  >
-                    Kirim link PDF
-                  </button>
-                ) : null}
-                {payment.phone ? (
-                  <button
                     className="h-11 rounded-md bg-[#172019] px-4 text-sm font-bold text-white"
                     onClick={() => toggleSent(payment)}
                     type="button"
@@ -632,7 +611,10 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                     <div className="flex flex-wrap gap-2">
                       <a
                         className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md bg-[#25d366] px-3 text-xs font-bold text-[#062511]"
-                        href={createWhatsappUrl(payment)}
+                        href={createWhatsappUrl(
+                          payment,
+                          createPaymentProofPath(payment),
+                        )}
                         onClick={(event) => {
                           event.preventDefault();
                           openWhatsapp(payment);
@@ -658,13 +640,6 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                         type="button"
                       >
                         Buka PDF
-                      </button>
-                      <button
-                        className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
-                        onClick={() => sendPaymentProofLink(payment)}
-                        type="button"
-                      >
-                        Link PDF
                       </button>
                     </div>
                   ) : (
@@ -736,7 +711,10 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
             </div>
             <div className="rounded-lg bg-[#f7f9f5] p-4 text-[#172019]">
               <pre className="whitespace-pre-wrap font-sans text-sm leading-6">
-                {createWhatsappMessage(selectedPayment)}
+                {createWhatsappMessage(
+                  selectedPayment,
+                  createPaymentProofPath(selectedPayment),
+                )}
               </pre>
             </div>
             {selectedPayment.phone ? (
@@ -762,15 +740,6 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
             >
               Buka PDF
             </button>
-            {selectedPayment.phone ? (
-              <button
-                className="mt-3 h-12 w-full rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
-                onClick={() => sendPaymentProofLink(selectedPayment)}
-                type="button"
-              >
-                Kirim link PDF
-              </button>
-            ) : null}
             {selectedPayment.phone ? (
               <button
                 className="mt-3 h-12 w-full rounded-md bg-[#172019] px-4 text-sm font-bold text-white"
@@ -814,13 +783,6 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 type="button"
               >
                 Buka PDF
-              </button>
-              <button
-                className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
-                onClick={() => sendPaymentProofLink(queuePayment)}
-                type="button"
-              >
-                Link PDF
               </button>
               <button
                 className="inline-flex h-11 items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
