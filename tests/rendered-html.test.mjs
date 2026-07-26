@@ -46,6 +46,35 @@ test("server-renders the payment proof WhatsApp dashboard", async () => {
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
 
+test("serves payment proof PDFs by invoice link", async () => {
+  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
+  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}-pdf`);
+  const { default: worker } = await import(workerUrl.href);
+
+  const response = await worker.fetch(
+    new Request(
+      "http://localhost/api/payment-proof?invoice=INV-2026-0726-001",
+    ),
+    {
+      ASSETS: {
+        fetch: async () => new Response("Not found", { status: 404 }),
+      },
+    },
+    {
+      waitUntil() {},
+      passThroughOnException() {},
+    },
+  );
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /application\/pdf/);
+  assert.match(
+    response.headers.get("content-disposition") ?? "",
+    /bukti-pembayaran-INV-2026-0726-001\.pdf/,
+  );
+  assert.match(await response.text(), /^%PDF-1\.4/);
+});
+
 test("keeps starter preview removed from product source", async () => {
   const [page, layout, packageJson] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
@@ -94,6 +123,10 @@ test("keeps member list paginated and searchable", async () => {
   assert.match(table, /Antrean kirim/);
   assert.match(table, /Kirim WhatsApp/);
   assert.match(table, /Download PDF/);
+  assert.match(table, /Buka PDF/);
+  assert.match(table, /Kirim link PDF/);
+  assert.match(table, /createPaymentProofPath/);
+  assert.match(table, /\/api\/payment-proof\?invoice=/);
   assert.match(table, /createPaymentProofPdf/);
   assert.match(table, /application\/pdf/);
   assert.match(table, /bukti-pembayaran-\$\{payment\.id\}\.pdf/);

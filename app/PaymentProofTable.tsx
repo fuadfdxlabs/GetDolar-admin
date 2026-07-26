@@ -115,6 +115,9 @@ const createWhatsappUrl = (payment: PaymentProofRow) =>
       )}`
     : "#";
 
+const createPaymentProofPath = (payment: PaymentProofRow) =>
+  `/api/payment-proof?invoice=${encodeURIComponent(payment.id)}`;
+
 const escapePdfText = (value: string) =>
   value
     .replace(/[^\x20-\x7E]/g, " ")
@@ -437,6 +440,35 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
     window.open(createWhatsappUrl(payment), "_blank", "noopener,noreferrer");
   };
 
+  const getPaymentProofUrl = (payment: PaymentProofRow) =>
+    `${window.location.origin}${createPaymentProofPath(payment)}`;
+
+  const openPaymentProof = (payment: PaymentProofRow) => {
+    window.open(getPaymentProofUrl(payment), "_blank", "noopener,noreferrer");
+  };
+
+  const sendPaymentProofLink = (payment: PaymentProofRow) => {
+    if (!payment.phone) {
+      return;
+    }
+
+    const message = [
+      "GET DOLAR",
+      "BUKTI PEMBAYARAN",
+      "",
+      `Halo ${payment.customer}, bukti pembayaran periode ${payment.period} bisa dibuka di link berikut:`,
+      getPaymentProofUrl(payment),
+      "",
+      "Diproses oleh GET DOLAR",
+    ].join("\n");
+
+    window.open(
+      `https://wa.me/${payment.phone}?text=${encodeURIComponent(message)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
+
   const downloadPdf = (payment: PaymentProofRow) => {
     const url = URL.createObjectURL(createPaymentProofPdf(payment));
     const link = document.createElement("a");
@@ -591,6 +623,22 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
               )}
               <button
                 className="inline-flex h-11 items-center justify-center rounded-md border border-white/20 px-4 text-sm font-bold text-white"
+                onClick={() => openPaymentProof(defaultPreviewPayment)}
+                type="button"
+              >
+                Buka PDF
+              </button>
+              {defaultPreviewPayment.phone ? (
+                <button
+                  className="inline-flex h-11 items-center justify-center rounded-md border border-white/20 px-4 text-sm font-bold text-white"
+                  onClick={() => sendPaymentProofLink(defaultPreviewPayment)}
+                  type="button"
+                >
+                  Kirim link PDF
+                </button>
+              ) : null}
+              <button
+                className="inline-flex h-11 items-center justify-center rounded-md border border-white/20 px-4 text-sm font-bold text-white"
                 onClick={() => downloadPdf(defaultPreviewPayment)}
                 type="button"
               >
@@ -682,6 +730,22 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                     Nomor WA belum ada
                   </button>
                 )}
+                <button
+                  className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+                  onClick={() => openPaymentProof(payment)}
+                  type="button"
+                >
+                  Buka PDF
+                </button>
+                {payment.phone ? (
+                  <button
+                    className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+                    onClick={() => sendPaymentProofLink(payment)}
+                    type="button"
+                  >
+                    Kirim link PDF
+                  </button>
+                ) : null}
                 <button
                   className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
                   onClick={() => downloadPdf(payment)}
@@ -793,10 +857,24 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                       </button>
                       <button
                         className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
+                        onClick={() => openPaymentProof(payment)}
+                        type="button"
+                      >
+                        Buka PDF
+                      </button>
+                      <button
+                        className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
+                        onClick={() => sendPaymentProofLink(payment)}
+                        type="button"
+                      >
+                        Link PDF
+                      </button>
+                      <button
+                        className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
                         onClick={() => downloadPdf(payment)}
                         type="button"
                       >
-                        PDF
+                        Download
                       </button>
                     </div>
                   ) : (
@@ -806,10 +884,17 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                       </span>
                       <button
                         className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
+                        onClick={() => openPaymentProof(payment)}
+                        type="button"
+                      >
+                        Buka PDF
+                      </button>
+                      <button
+                        className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
                         onClick={() => downloadPdf(payment)}
                         type="button"
                       >
-                        PDF
+                        Download
                       </button>
                     </div>
                   )}
@@ -889,6 +974,22 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
             )}
             <button
               className="mt-3 h-12 w-full rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+              onClick={() => openPaymentProof(selectedPayment)}
+              type="button"
+            >
+              Buka PDF
+            </button>
+            {selectedPayment.phone ? (
+              <button
+                className="mt-3 h-12 w-full rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+                onClick={() => sendPaymentProofLink(selectedPayment)}
+                type="button"
+              >
+                Kirim link PDF
+              </button>
+            ) : null}
+            <button
+              className="mt-3 h-12 w-full rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
               onClick={() => downloadPdf(selectedPayment)}
               type="button"
             >
@@ -933,10 +1034,24 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
               </button>
               <button
                 className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+                onClick={() => openPaymentProof(queuePayment)}
+                type="button"
+              >
+                Buka PDF
+              </button>
+              <button
+                className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+                onClick={() => sendPaymentProofLink(queuePayment)}
+                type="button"
+              >
+                Link PDF
+              </button>
+              <button
+                className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
                 onClick={() => downloadPdf(queuePayment)}
                 type="button"
               >
-                PDF
+                Download
               </button>
               <button
                 className="inline-flex h-11 items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
