@@ -82,6 +82,7 @@ test("keeps member list paginated and searchable", async () => {
   assert.match(table, /Preview bukti/);
   assert.match(table, /Ada WA/);
   assert.match(table, /No WA kosong/);
+  assert.match(table, /Belum dikirim/);
   assert.doesNotMatch(table, /filters\.map[\s\S]{0,180}md:hidden/);
   assert.match(table, /Pilih tampil/);
   assert.match(table, /Pilih hasil filter/);
@@ -92,8 +93,13 @@ test("keeps member list paginated and searchable", async () => {
   assert.match(table, /Kirim dipilih/);
   assert.match(table, /Antrean kirim/);
   assert.match(table, /Kirim WhatsApp/);
+  assert.match(table, /Copy pesan/);
+  assert.match(table, /Tandai terkirim/);
+  assert.match(table, /SENT_STORAGE_KEY/);
+  assert.match(table, /localStorage/);
+  assert.match(table, /navigator\.clipboard\.writeText/);
   assert.match(table, /Berikutnya/);
   assert.match(table, /<th className="w-14 px-5 py-3">No\.<\/th>/);
-  assert.match(table, /<th className="w-32 px-5 py-3">Aksi<\/th>/);
+  assert.match(table, /<th className="w-64 px-5 py-3">Aksi<\/th>/);
   assert.match(table, /whitespace-nowrap rounded-md bg-\[#25d366\]/);
 });

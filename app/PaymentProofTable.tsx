@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type PaymentProofRow = {
   id: string;
@@ -30,10 +30,16 @@ type PaymentProofTableProps = {
   payments: PaymentProofRow[];
 };
 
-type FilterKey = "all" | "has-phone" | "no-phone" | "has-amount";
+type FilterKey =
+  | "all"
+  | "has-phone"
+  | "no-phone"
+  | "has-amount"
+  | "not-sent";
 
 const PAGE_SIZE = 15;
 const MOBILE_PAGE_SIZE = 15;
+const SENT_STORAGE_KEY = "getdolar.sentPaymentProofIds";
 
 const filters: Array<{
   key: FilterKey;
@@ -43,6 +49,7 @@ const filters: Array<{
   { key: "has-phone", label: "Ada WA" },
   { key: "no-phone", label: "No WA kosong" },
   { key: "has-amount", label: "Ada nominal" },
+  { key: "not-sent", label: "Belum dikirim" },
 ];
 
 const displayText = (value: string) => value.replace(/_/g, " ");
@@ -105,9 +112,24 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   const [queue, setQueue] = useState<PaymentProofRow[]>([]);
   const [queueIndex, setQueueIndex] = useState(0);
   const [showDefaultPreview, setShowDefaultPreview] = useState(false);
+  const [sentIds, setSentIds] = useState<string[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(SENT_STORAGE_KEY);
+      setSentIds(stored ? JSON.parse(stored) : []);
+    } catch {
+      setSentIds([]);
+    }
+  }, []);
 
   const filteredPayments = useMemo(() => {
     const filteredByType = payments.filter((payment) => {
+      if (filter === "not-sent") {
+        return !sentIds.includes(payment.id);
+      }
+
       if (filter === "has-phone") {
         return Boolean(payment.phone);
       }
@@ -142,7 +164,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
         .toLowerCase()
         .includes(normalizedQuery),
     );
-  }, [filter, payments, query]);
+  }, [filter, payments, query, sentIds]);
 
   const totalPages = Math.max(1, Math.ceil(filteredPayments.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -205,6 +227,39 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
     setMobileVisibleCount(MOBILE_PAGE_SIZE);
   };
 
+  const markAsSent = (payment: PaymentProofRow) => {
+    setSentIds((current) => {
+      const next = current.includes(payment.id)
+        ? current
+        : [...current, payment.id];
+      window.localStorage.setItem(SENT_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const copyMessage = async (payment: PaymentProofRow) => {
+    const message = createWhatsappMessage(payment);
+
+    try {
+      await navigator.clipboard.writeText(message);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = message;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+
+    setCopiedId(payment.id);
+    window.setTimeout(() => setCopiedId(null), 1800);
+  };
+
+  const sentCount = payments.filter((payment) => sentIds.includes(payment.id)).length;
+
   return (
     <section
       className="rounded-lg border border-[#d8ded2] bg-white"
@@ -229,7 +284,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
             value={query}
           />
           <span className="rounded-md border border-[#cbd4c6] px-3 py-2 text-sm font-semibold">
-            {filteredPayments.length} data
+            {filteredPayments.length} data · {sentCount} terkirim
           </span>
         </div>
         <div className="flex gap-2 overflow-x-auto">
@@ -362,12 +417,18 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 </div>
                 <span
                   className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-bold ${
-                    payment.phone
+                    sentIds.includes(payment.id)
+                      ? "bg-[#172019] text-white"
+                      : payment.phone
                       ? "bg-[#d9fbe6] text-[#0d5f2b]"
                       : "bg-[#ffe7df] text-[#9b392f]"
                   }`}
                 >
-                  {payment.phone ? "Ada WA" : "No WA kosong"}
+                  {sentIds.includes(payment.id)
+                    ? "Terkirim"
+                    : payment.phone
+                      ? "Ada WA"
+                      : "No WA kosong"}
                 </span>
               </div>
 
@@ -394,6 +455,13 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 >
                   Lihat bukti
                 </button>
+                <button
+                  className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+                  onClick={() => copyMessage(payment)}
+                  type="button"
+                >
+                  {copiedId === payment.id ? "Tersalin" : "Copy pesan"}
+                </button>
                 {payment.phone ? (
                   <a
                     className="inline-flex h-11 items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
@@ -410,6 +478,17 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                     Nomor WA belum ada
                   </button>
                 )}
+                {payment.phone ? (
+                  <button
+                    className="h-11 rounded-md bg-[#172019] px-4 text-sm font-bold text-white"
+                    onClick={() => markAsSent(payment)}
+                    type="button"
+                  >
+                    {sentIds.includes(payment.id)
+                      ? "Sudah terkirim"
+                      : "Tandai terkirim"}
+                  </button>
+                ) : null}
               </div>
             </article>
           ))}
@@ -437,7 +516,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
       </div>
 
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[1080px] table-fixed text-left text-sm">
+        <table className="w-full min-w-[1240px] table-fixed text-left text-sm">
           <thead className="bg-[#f7f9f5] text-xs uppercase text-[#607065]">
             <tr>
               <th className="w-14 px-5 py-3">No.</th>
@@ -450,7 +529,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                   {cell.label}
                 </th>
               ))}
-              <th className="w-32 px-5 py-3">Aksi</th>
+              <th className="w-64 px-5 py-3">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#edf0e9]">
@@ -478,13 +557,33 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 ))}
                 <td className="px-5 py-4">
                   {payment.phone ? (
-                    <a
-                      className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md bg-[#25d366] px-3 text-xs font-bold text-[#062511]"
-                      href={createWhatsappUrl(payment)}
-                      target="_blank"
-                    >
-                      Kirim WA
-                    </a>
+                    <div className="flex flex-wrap gap-2">
+                      <a
+                        className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md bg-[#25d366] px-3 text-xs font-bold text-[#062511]"
+                        href={createWhatsappUrl(payment)}
+                        target="_blank"
+                      >
+                        Kirim WA
+                      </a>
+                      <button
+                        className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
+                        onClick={() => copyMessage(payment)}
+                        type="button"
+                      >
+                        {copiedId === payment.id ? "Tersalin" : "Copy"}
+                      </button>
+                      <button
+                        className={`inline-flex h-9 items-center justify-center whitespace-nowrap rounded-md px-3 text-xs font-bold ${
+                          sentIds.includes(payment.id)
+                            ? "bg-[#172019] text-white"
+                            : "border border-[#cbd4c6]"
+                        }`}
+                        onClick={() => markAsSent(payment)}
+                        type="button"
+                      >
+                        {sentIds.includes(payment.id) ? "Terkirim" : "Tandai"}
+                      </button>
+                    </div>
                   ) : (
                     <span className="inline-flex min-w-20 text-xs font-semibold leading-5 text-[#9b392f]">
                       No WA kosong
@@ -548,6 +647,13 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 {createWhatsappMessage(selectedPayment)}
               </pre>
             </div>
+            <button
+              className="mt-4 h-12 w-full rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+              onClick={() => copyMessage(selectedPayment)}
+              type="button"
+            >
+              {copiedId === selectedPayment.id ? "Pesan tersalin" : "Copy pesan"}
+            </button>
             {selectedPayment.phone ? (
               <a
                 className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
@@ -564,6 +670,17 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 Nomor WA belum ada
               </button>
             )}
+            {selectedPayment.phone ? (
+              <button
+                className="mt-3 h-12 w-full rounded-md bg-[#172019] px-4 text-sm font-bold text-white"
+                onClick={() => markAsSent(selectedPayment)}
+                type="button"
+              >
+                {sentIds.includes(selectedPayment.id)
+                  ? "Sudah ditandai terkirim"
+                  : "Tandai terkirim"}
+              </button>
+            ) : null}
           </section>
         </div>
       ) : null}
@@ -597,6 +714,20 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
               >
                 Kirim WhatsApp
               </a>
+              <button
+                className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+                onClick={() => copyMessage(queuePayment)}
+                type="button"
+              >
+                {copiedId === queuePayment.id ? "Tersalin" : "Copy pesan"}
+              </button>
+              <button
+                className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+                onClick={() => markAsSent(queuePayment)}
+                type="button"
+              >
+                {sentIds.includes(queuePayment.id) ? "Terkirim" : "Tandai terkirim"}
+              </button>
               <button
                 className="h-11 rounded-md bg-[#172019] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#607065]"
                 disabled={queueIndex >= queue.length - 1}
