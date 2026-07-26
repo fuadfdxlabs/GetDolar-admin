@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "GetDolar Admin Dashboard",
   description:
-    "Kirim bukti pembayaran member dari Pend_Per_Member_Final ke WhatsApp.",
+    "Kirim bukti pembayaran member GetDolar ke WhatsApp.",
 };
 
 export const revalidate = 60;
@@ -12,6 +12,8 @@ const SHEET_ID = "1igG8M1bQEo6QaE9_y-OyPMLoNs4y6skeO6oKkuorPMo";
 const SHEET_GID = "1523444064";
 const SHEET_NAME = "Pend_Per_Member_Final";
 const PROOF_TEMPLATE_SHEET = "Bukti_Pembayaran";
+const SHEET_DISPLAY_NAME = "Pendapatan per Member";
+const PROOF_TEMPLATE_DISPLAY_NAME = "Bukti Pembayaran";
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
 
 type SheetRow = Record<string, string>;
@@ -173,6 +175,41 @@ const aliases = {
 
 const normalize = (value: string) =>
   value.toLowerCase().replace(/[_-]/g, " ").replace(/\s+/g, " ").trim();
+
+const headerLabels: Record<string, string> = {
+  Periode: "Periode",
+  Member_ID: "ID Member",
+  "Revenue_$": "Revenue ($)",
+  "Referral_$": "Referral ($)",
+  "Jumlah_$": "Total Dollar ($)",
+  Kurs: "Kurs",
+  Total_Rp: "Total Rupiah",
+  Biaya_Rp: "Biaya Admin",
+  Hasil_Bersih_Rp: "Diterima Bersih",
+  Metode_Pembayaran: "Metode Pembayaran",
+  Tujuan_Pembayaran: "Tujuan Pembayaran",
+  Tanggal_Bayar: "Tanggal Bayar",
+  No_Invoice: "No. Invoice",
+  Status: "Status",
+  nama: "Nama",
+  no_hp: "No. HP",
+  no_rekening: "No. Rekening",
+  bank: "Bank",
+};
+
+const displayHeader = (header: string) =>
+  headerLabels[header] ||
+  header
+    .replace(/[_-]/g, " ")
+    .replace(/\brp\b/gi, "Rp")
+    .replace(/\bno\b/gi, "No.")
+    .replace(/\bid\b/gi, "ID")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const displayText = (value: string) => value.replace(/_/g, " ");
+
+const displayCellValue = (header: string, value: string) =>
+  header === "Member_ID" || header === "Domain_ID" ? displayText(value) : value;
 
 const pickValue = (
   row: SheetRow,
@@ -350,7 +387,7 @@ const createWhatsappMessage = (payment: PaymentProofRow) =>
     "",
     `Halo ${payment.customer}, pembayaran periode ${payment.period} sudah kami proses.`,
     "",
-    `ID Member: ${payment.memberId}`,
+    `ID Member: ${displayText(payment.memberId)}`,
     `No. Invoice: ${payment.id}`,
     `Revenue ($): ${formatDollar(payment.revenue)}`,
     `Referral ($): ${formatDollar(payment.referral)}`,
@@ -401,7 +438,13 @@ export default async function Home() {
           </h1>
         </div>
         <nav className="space-y-1 text-sm">
-          {["Dashboard", SHEET_NAME, PROOF_TEMPLATE_SHEET, "Pembayaran", "Laporan"].map(
+          {[
+            "Dashboard",
+            SHEET_DISPLAY_NAME,
+            PROOF_TEMPLATE_DISPLAY_NAME,
+            "Pembayaran",
+            "Laporan",
+          ].map(
             (item, index) => (
               <a
                 className={`flex items-center justify-between rounded-md px-3 py-2.5 ${
@@ -433,7 +476,7 @@ export default async function Home() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-sm font-medium text-[#607065]">
-                Source: {SHEET_NAME}
+                Source: {SHEET_DISPLAY_NAME}
               </p>
               <h2 className="mt-1 text-2xl font-semibold tracking-normal md:text-3xl">
                 Bukti Pembayaran WhatsApp
@@ -463,7 +506,7 @@ export default async function Home() {
               <section className="rounded-lg border border-[#e5c66a] bg-[#fff8df] p-4 text-sm text-[#5c4711]">
                 <p className="font-semibold">Google Sheet belum kebaca publik.</p>
                 <p className="mt-1 leading-6">
-                  Dashboard sudah diarahkan ke tab {SHEET_NAME}, tapi sementara
+                  Dashboard sudah diarahkan ke {SHEET_DISPLAY_NAME}, tapi sementara
                   menampilkan contoh bukti pembayaran. Detail: {sheet.error}
                 </p>
               </section>
@@ -471,10 +514,10 @@ export default async function Home() {
 
             <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {[
-                ["Baris sheet", String(payments.length), SHEET_NAME],
-                ["Total dibayar", formatRupiah(totalAmount), "dari Hasil_Bersih_Rp"],
+                ["Data member", String(payments.length), SHEET_DISPLAY_NAME],
+                ["Total dibayar", formatRupiah(totalAmount), "dari diterima bersih"],
                 ["Nomor WA siap", `${whatsappReady}`, "bisa dikirim"],
-                ["Template", PROOF_TEMPLATE_SHEET, "bukti pembayaran"],
+                ["Template", PROOF_TEMPLATE_DISPLAY_NAME, "siap dikirim"],
               ].map(([label, value, meta]) => (
                 <div
                   className="rounded-lg border border-[#d8ded2] bg-white p-4"
@@ -497,7 +540,7 @@ export default async function Home() {
             >
               <div className="flex items-center justify-between border-b border-[#e5eadf] px-5 py-4">
                 <div>
-                  <h3 className="text-lg font-semibold">{SHEET_NAME}</h3>
+                  <h3 className="text-lg font-semibold">{SHEET_DISPLAY_NAME}</h3>
                   <p className="text-sm text-[#607065]">
                     Menampilkan data pembayaran yang jadi sumber bukti.
                   </p>
@@ -510,9 +553,12 @@ export default async function Home() {
                 <table className="w-full min-w-[860px] text-left text-sm">
                   <thead className="bg-[#f7f9f5] text-xs uppercase text-[#607065]">
                     <tr>
-                      {tableHeaders.map((header) => (
-                        <th className="px-5 py-3" key={header}>
-                          {header}
+                      {tableHeaders.map((header, index) => (
+                        <th
+                          className="px-5 py-3"
+                          key={`${index}-${displayHeader(header)}`}
+                        >
+                          {displayHeader(header)}
                         </th>
                       ))}
                       <th className="px-5 py-3">Aksi</th>
@@ -521,10 +567,13 @@ export default async function Home() {
                   <tbody className="divide-y divide-[#edf0e9]">
                     {payments.slice(0, 12).map((payment, index) => (
                       <tr key={`${payment.id}-${index}`}>
-                        {tableHeaders.map((header) => (
-                          <td className="max-w-52 px-5 py-4" key={header}>
+                        {tableHeaders.map((header, headerIndex) => (
+                          <td
+                            className="max-w-52 px-5 py-4"
+                            key={`${headerIndex}-${displayHeader(header)}`}
+                          >
                             <span className="line-clamp-2">
-                              {payment.raw[header] || "-"}
+                              {displayCellValue(header, payment.raw[header] || "-")}
                             </span>
                           </td>
                         ))}
