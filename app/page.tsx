@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PaymentProofTable } from "./PaymentProofTable";
 
 export const metadata: Metadata = {
   title: "GetDolar Admin Dashboard",
@@ -413,6 +414,50 @@ const createWhatsappUrl = (payment: PaymentProofRow) =>
       )}`
     : "#";
 
+const createSearchText = (payment: PaymentProofRow) =>
+  [
+    payment.id,
+    payment.customer,
+    payment.phone,
+    payment.memberId,
+    payment.method,
+    payment.destination,
+    payment.status,
+    payment.period,
+    payment.paidAt,
+    ...Object.values(payment.raw),
+  ]
+    .join(" ")
+    .replace(/_/g, " ");
+
+const createTablePayments = (
+  payments: PaymentProofRow[],
+  tableHeaders: string[],
+) =>
+  payments.map((payment) => ({
+    id: payment.id,
+    customer: payment.customer,
+    phone: payment.phone,
+    memberId: payment.memberId,
+    method: payment.method,
+    destination: payment.destination,
+    revenue: payment.revenue,
+    referral: payment.referral,
+    totalDollar: payment.totalDollar,
+    kurs: payment.kurs,
+    totalRupiah: payment.totalRupiah,
+    adminFee: payment.adminFee,
+    amount: payment.amount,
+    status: payment.status,
+    period: payment.period,
+    paidAt: payment.paidAt,
+    cells: tableHeaders.map((header) => ({
+      label: displayHeader(header),
+      value: displayCellValue(header, payment.raw[header] || "-"),
+    })),
+    searchText: createSearchText(payment),
+  }));
+
 export default async function Home() {
   const sheet = await getSheetData();
   const payments = sheet.payments;
@@ -425,6 +470,7 @@ export default async function Home() {
   );
   const whatsappReady = payments.filter((payment) => payment.phone).length;
   const tableHeaders = sheet.headers.slice(0, 7);
+  const tablePayments = createTablePayments(payments, tableHeaders);
 
   return (
     <main className="min-h-screen bg-[#f5f7f4] text-[#172019]">
@@ -534,70 +580,7 @@ export default async function Home() {
               ))}
             </section>
 
-            <section
-              className="rounded-lg border border-[#d8ded2] bg-white"
-              id="data-sheet"
-            >
-              <div className="flex items-center justify-between border-b border-[#e5eadf] px-5 py-4">
-                <div>
-                  <h3 className="text-lg font-semibold">{SHEET_DISPLAY_NAME}</h3>
-                  <p className="text-sm text-[#607065]">
-                    Menampilkan semua data pembayaran yang jadi sumber bukti.
-                  </p>
-                </div>
-                <span className="rounded-md border border-[#cbd4c6] px-3 py-2 text-sm font-semibold">
-                  Semua {payments.length} baris
-                </span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[860px] text-left text-sm">
-                  <thead className="bg-[#f7f9f5] text-xs uppercase text-[#607065]">
-                    <tr>
-                      {tableHeaders.map((header, index) => (
-                        <th
-                          className="px-5 py-3"
-                          key={`${index}-${displayHeader(header)}`}
-                        >
-                          {displayHeader(header)}
-                        </th>
-                      ))}
-                      <th className="px-5 py-3">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#edf0e9]">
-                    {payments.map((payment, index) => (
-                      <tr key={`${payment.id}-${index}`}>
-                        {tableHeaders.map((header, headerIndex) => (
-                          <td
-                            className="max-w-52 px-5 py-4"
-                            key={`${headerIndex}-${displayHeader(header)}`}
-                          >
-                            <span className="line-clamp-2">
-                              {displayCellValue(header, payment.raw[header] || "-")}
-                            </span>
-                          </td>
-                        ))}
-                        <td className="px-5 py-4">
-                          {payment.phone ? (
-                            <a
-                              className="rounded-md bg-[#25d366] px-3 py-2 text-xs font-bold text-[#062511]"
-                              href={createWhatsappUrl(payment)}
-                              target="_blank"
-                            >
-                              Kirim WA
-                            </a>
-                          ) : (
-                            <span className="text-xs font-semibold text-[#9b392f]">
-                              No WA kosong
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
+            <PaymentProofTable payments={tablePayments} />
           </div>
 
           <aside className="space-y-6">

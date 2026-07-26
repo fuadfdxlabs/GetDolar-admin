@@ -68,3 +68,17 @@ test("keeps starter preview removed from product source", async () => {
   assert.doesNotMatch(page, /SkeletonPreview|_sites-preview|codex-preview/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 });
+
+test("keeps member list paginated and searchable", async () => {
+  const table = await readFile(
+    new URL("../app/PaymentProofTable.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(table, /const PAGE_SIZE = 15/);
+  assert.match(table, /placeholder="Cari nama, ID member, WA\.\.\."/);
+  assert.match(table, /Halaman \{currentPage\} dari \{totalPages\}/);
+  assert.match(table, /Sebelumnya/);
+  assert.match(table, /Selanjutnya/);
+  assert.match(table, /<th className="px-5 py-3">No\.<\/th>/);
+});
