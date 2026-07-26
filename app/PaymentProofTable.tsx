@@ -76,35 +76,37 @@ const formatPaymentDate = (date = new Date()) =>
     year: "numeric",
   }).format(date);
 
+const createPaymentProofLines = (payment: PaymentProofRow) => [
+  "GET DOLAR",
+  "BUKTI PEMBAYARAN",
+  "",
+  `Halo ${payment.customer}, pembayaran periode ${payment.period} sudah kami proses.`,
+  "",
+  `ID Member: ${displayText(payment.memberId)}`,
+  `No. Invoice: ${payment.id}`,
+  `Revenue ($): ${formatDollar(payment.revenue)}`,
+  `Referral ($): ${formatDollar(payment.referral)}`,
+  `Total Dollar ($): ${formatDollar(payment.totalDollar)}`,
+  `Kurs: ${formatRupiah(payment.kurs).replace("Rp", "Rp ")}`,
+  `Total Rupiah: ${formatRupiah(payment.totalRupiah)}`,
+  `Biaya Admin: ${formatRupiah(payment.adminFee)}`,
+  `DITERIMA BERSIH: ${formatRupiah(payment.amount)}`,
+  "",
+  ...(hasValue(payment.method)
+    ? [`Metode Pembayaran: ${payment.method}`]
+    : []),
+  ...(hasValue(payment.destination)
+    ? [`Tujuan Pembayaran: ${payment.destination}`]
+    : []),
+  `Tanggal Pembayaran: ${formatPaymentDate()}`,
+  "",
+  "Diproses oleh GET DOLAR",
+  "Terima kasih atas partisipasi Anda.",
+  "Semoga sukses dan penghasilan terus meningkat.",
+];
+
 const createWhatsappMessage = (payment: PaymentProofRow) =>
-  [
-    "GET DOLAR",
-    "BUKTI PEMBAYARAN",
-    "",
-    `Halo ${payment.customer}, pembayaran periode ${payment.period} sudah kami proses.`,
-    "",
-    `ID Member: ${displayText(payment.memberId)}`,
-    `No. Invoice: ${payment.id}`,
-    `Revenue ($): ${formatDollar(payment.revenue)}`,
-    `Referral ($): ${formatDollar(payment.referral)}`,
-    `Total Dollar ($): ${formatDollar(payment.totalDollar)}`,
-    `Kurs: ${formatRupiah(payment.kurs).replace("Rp", "Rp ")}`,
-    `Total Rupiah: ${formatRupiah(payment.totalRupiah)}`,
-    `Biaya Admin: ${formatRupiah(payment.adminFee)}`,
-    `DITERIMA BERSIH: ${formatRupiah(payment.amount)}`,
-    "",
-    ...(hasValue(payment.method)
-      ? [`Metode Pembayaran: ${payment.method}`]
-      : []),
-    ...(hasValue(payment.destination)
-      ? [`Tujuan Pembayaran: ${payment.destination}`]
-      : []),
-    `Tanggal Pembayaran: ${formatPaymentDate()}`,
-    "",
-    "Diproses oleh GET DOLAR",
-    "Terima kasih atas partisipasi Anda.",
-    "Semoga sukses dan penghasilan terus meningkat.",
-  ].join("\n");
+  createPaymentProofLines(payment).join("\n");
 
 const createWhatsappUrl = (payment: PaymentProofRow) =>
   payment.phone
@@ -112,6 +114,86 @@ const createWhatsappUrl = (payment: PaymentProofRow) =>
         createWhatsappMessage(payment),
       )}`
     : "#";
+
+const escapePdfText = (value: string) =>
+  value
+    .replace(/[^\x20-\x7E]/g, " ")
+    .replace(/\\/g, "\\\\")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)");
+
+const wrapPdfLine = (value: string, limit = 78) => {
+  const words = value.split(/\s+/);
+  const lines: string[] = [];
+  let current = "";
+
+  words.forEach((word) => {
+    if (!current) {
+      current = word;
+    } else if (`${current} ${word}`.length <= limit) {
+      current = `${current} ${word}`;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+  });
+
+  if (current) {
+    lines.push(current);
+  }
+
+  return lines.length ? lines : [""];
+};
+
+const createPaymentProofPdf = (payment: PaymentProofRow) => {
+  const lines = createPaymentProofLines(payment).flatMap((line) =>
+    line ? wrapPdfLine(line) : [""],
+  );
+  let y = 792;
+  const content = [
+    "BT",
+    "/F1 18 Tf",
+    "72 792 Td",
+    "(GET DOLAR) Tj",
+    "/F1 12 Tf",
+  ];
+
+  lines.slice(1).forEach((line) => {
+    y -= line ? 18 : 12;
+    content.push(`1 0 0 1 72 ${y} Tm`);
+    content.push(`(${escapePdfText(line)}) Tj`);
+  });
+
+  content.push("ET");
+
+  const stream = content.join("\n");
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+  ];
+  const parts = ["%PDF-1.4\n"];
+  const offsets = [0];
+
+  objects.forEach((object, index) => {
+    offsets.push(parts.join("").length);
+    parts.push(`${index + 1} 0 obj\n${object}\nendobj\n`);
+  });
+
+  const xrefOffset = parts.join("").length;
+  parts.push(`xref\n0 ${objects.length + 1}\n`);
+  parts.push("0000000000 65535 f \n");
+  offsets.slice(1).forEach((offset) => {
+    parts.push(`${String(offset).padStart(10, "0")} 00000 n \n`);
+  });
+  parts.push(
+    `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`,
+  );
+
+  return new Blob(parts, { type: "application/pdf" });
+};
 
 export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   const [query, setQuery] = useState("");
@@ -257,6 +339,17 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
     window.open(createWhatsappUrl(payment), "_blank", "noopener,noreferrer");
   };
 
+  const downloadPdf = (payment: PaymentProofRow) => {
+    const url = URL.createObjectURL(createPaymentProofPdf(payment));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `bukti-pembayaran-${payment.id}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const resetSentStatuses = () => {
     setSentIds([]);
     window.localStorage.removeItem(SENT_STORAGE_KEY);
@@ -398,6 +491,13 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                   Nomor WA belum ada
                 </button>
               )}
+              <button
+                className="inline-flex h-11 items-center justify-center rounded-md border border-white/20 px-4 text-sm font-bold text-white"
+                onClick={() => downloadPdf(defaultPreviewPayment)}
+                type="button"
+              >
+                Download PDF
+              </button>
             </div>
           </div>
         </div>
@@ -484,6 +584,13 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                     Nomor WA belum ada
                   </button>
                 )}
+                <button
+                  className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+                  onClick={() => downloadPdf(payment)}
+                  type="button"
+                >
+                  Download PDF
+                </button>
                 {payment.phone ? (
                   <button
                     className="h-11 rounded-md bg-[#172019] px-4 text-sm font-bold text-white"
@@ -586,11 +693,27 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                       >
                         {sentIds.includes(payment.id) ? "Batalkan" : "Tandai"}
                       </button>
+                      <button
+                        className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
+                        onClick={() => downloadPdf(payment)}
+                        type="button"
+                      >
+                        PDF
+                      </button>
                     </div>
                   ) : (
-                    <span className="inline-flex min-w-20 text-xs font-semibold leading-5 text-[#9b392f]">
-                      No WA kosong
-                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex min-w-20 text-xs font-semibold leading-5 text-[#9b392f]">
+                        No WA kosong
+                      </span>
+                      <button
+                        className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
+                        onClick={() => downloadPdf(payment)}
+                        type="button"
+                      >
+                        PDF
+                      </button>
+                    </div>
                   )}
                 </td>
               </tr>
@@ -666,6 +789,13 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 Nomor WA belum ada
               </button>
             )}
+            <button
+              className="mt-3 h-12 w-full rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+              onClick={() => downloadPdf(selectedPayment)}
+              type="button"
+            >
+              Download PDF
+            </button>
             {selectedPayment.phone ? (
               <button
                 className="mt-3 h-12 w-full rounded-md bg-[#172019] px-4 text-sm font-bold text-white"
@@ -702,6 +832,13 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 type="button"
               >
                 Preview
+              </button>
+              <button
+                className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+                onClick={() => downloadPdf(queuePayment)}
+                type="button"
+              >
+                PDF
               </button>
               <button
                 className="inline-flex h-11 items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
