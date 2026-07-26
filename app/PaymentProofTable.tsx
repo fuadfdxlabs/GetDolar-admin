@@ -30,7 +30,20 @@ type PaymentProofTableProps = {
   payments: PaymentProofRow[];
 };
 
+type FilterKey = "all" | "has-phone" | "no-phone" | "has-amount";
+
 const PAGE_SIZE = 15;
+const MOBILE_PAGE_SIZE = 15;
+
+const filters: Array<{
+  key: FilterKey;
+  label: string;
+}> = [
+  { key: "all", label: "Semua" },
+  { key: "has-phone", label: "Ada WA" },
+  { key: "no-phone", label: "No WA kosong" },
+  { key: "has-amount", label: "Ada nominal" },
+];
 
 const displayText = (value: string) => value.replace(/_/g, " ");
 
@@ -80,20 +93,38 @@ const createWhatsappUrl = (payment: PaymentProofRow) =>
       )}`
     : "#";
 
-export function PaymentProofTable({
-  payments,
-}: PaymentProofTableProps) {
+export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const [mobileVisibleCount, setMobileVisibleCount] = useState(MOBILE_PAGE_SIZE);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentProofRow | null>(
+    null,
+  );
 
   const filteredPayments = useMemo(() => {
+    const filteredByType = payments.filter((payment) => {
+      if (filter === "has-phone") {
+        return Boolean(payment.phone);
+      }
+
+      if (filter === "no-phone") {
+        return !payment.phone;
+      }
+
+      if (filter === "has-amount") {
+        return payment.amount > 0;
+      }
+
+      return true;
+    });
     const normalizedQuery = query.trim().toLowerCase();
 
     if (!normalizedQuery) {
-      return payments;
+      return filteredByType;
     }
 
-    return payments.filter((payment) =>
+    return filteredByType.filter((payment) =>
       [
         payment.id,
         payment.customer,
@@ -107,16 +138,24 @@ export function PaymentProofTable({
         .toLowerCase()
         .includes(normalizedQuery),
     );
-  }, [payments, query]);
+  }, [filter, payments, query]);
 
   const totalPages = Math.max(1, Math.ceil(filteredPayments.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const visiblePayments = filteredPayments.slice(pageStart, pageStart + PAGE_SIZE);
+  const visibleMobilePayments = filteredPayments.slice(0, mobileVisibleCount);
 
   const updateQuery = (value: string) => {
     setQuery(value);
     setPage(1);
+    setMobileVisibleCount(MOBILE_PAGE_SIZE);
+  };
+
+  const updateFilter = (value: FilterKey) => {
+    setFilter(value);
+    setPage(1);
+    setMobileVisibleCount(MOBILE_PAGE_SIZE);
   };
 
   return (
@@ -124,10 +163,10 @@ export function PaymentProofTable({
       className="rounded-lg border border-[#d8ded2] bg-white"
       id="data-sheet"
     >
-      <div className="flex flex-col gap-4 border-b border-[#e5eadf] px-5 py-4 xl:flex-row xl:items-center xl:justify-between">
+      <div className="sticky top-0 z-20 flex flex-col gap-4 border-b border-[#e5eadf] bg-white px-5 py-4 xl:static xl:flex-row xl:items-center xl:justify-between">
         <div>
           <h3 className="text-lg font-semibold">Pendapatan per Member</h3>
-          <p className="text-sm text-[#607065]">
+          <p className="hidden text-sm text-[#607065] sm:block">
             Menampilkan 15 baris per halaman dari data pembayaran.
           </p>
         </div>
@@ -146,8 +185,117 @@ export function PaymentProofTable({
             {filteredPayments.length} data
           </span>
         </div>
+        <div className="flex gap-2 overflow-x-auto md:hidden">
+          {filters.map((item) => (
+            <button
+              className={`h-9 shrink-0 rounded-md px-3 text-xs font-bold ${
+                filter === item.key
+                  ? "bg-[#172019] text-white"
+                  : "border border-[#cbd4c6] bg-white text-[#172019]"
+              }`}
+              key={item.key}
+              onClick={() => updateFilter(item.key)}
+              type="button"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="overflow-x-auto">
+
+      <div className="block md:hidden">
+        <div className="divide-y divide-[#edf0e9]">
+          {visibleMobilePayments.map((payment, index) => (
+            <article className="p-4" key={`${payment.id}-${index}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-[#607065]">
+                    No. {index + 1}
+                  </p>
+                  <h4 className="mt-1 break-words text-base font-semibold">
+                    {payment.customer}
+                  </h4>
+                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-[#607065]">
+                    {displayText(payment.memberId)}
+                  </p>
+                </div>
+                <span
+                  className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-bold ${
+                    payment.phone
+                      ? "bg-[#d9fbe6] text-[#0d5f2b]"
+                      : "bg-[#ffe7df] text-[#9b392f]"
+                  }`}
+                >
+                  {payment.phone ? "Ada WA" : "No WA kosong"}
+                </span>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-md bg-[#f7f9f5] p-3">
+                  <p className="text-xs font-semibold text-[#607065]">
+                    Diterima Bersih
+                  </p>
+                  <p className="mt-1 font-semibold">{formatRupiah(payment.amount)}</p>
+                </div>
+                <div className="rounded-md bg-[#f7f9f5] p-3">
+                  <p className="text-xs font-semibold text-[#607065]">
+                    Periode
+                  </p>
+                  <p className="mt-1 text-sm font-semibold">{payment.period}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-col gap-2">
+                <button
+                  className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+                  onClick={() => setSelectedPayment(payment)}
+                  type="button"
+                >
+                  Lihat bukti
+                </button>
+                {payment.phone ? (
+                  <a
+                    className="inline-flex h-11 items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
+                    href={createWhatsappUrl(payment)}
+                    target="_blank"
+                  >
+                    Kirim WA
+                  </a>
+                ) : (
+                  <button
+                    className="h-11 rounded-md bg-[#607065] px-4 text-sm font-bold text-white"
+                    type="button"
+                  >
+                    Nomor WA belum ada
+                  </button>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+
+        {visibleMobilePayments.length < filteredPayments.length ? (
+          <div className="border-t border-[#e5eadf] p-4">
+            <button
+              className="h-11 w-full rounded-md bg-[#172019] px-4 text-sm font-bold text-white"
+              onClick={() =>
+                setMobileVisibleCount((value) => value + MOBILE_PAGE_SIZE)
+              }
+              type="button"
+            >
+              Muat 15 lagi
+            </button>
+          </div>
+        ) : null}
+
+        {!filteredPayments.length ? (
+          <div className="p-6 text-center text-sm font-semibold text-[#607065]">
+            Data tidak ditemukan.
+          </div>
+        ) : null}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full min-w-[920px] text-left text-sm">
           <thead className="bg-[#f7f9f5] text-xs uppercase text-[#607065]">
             <tr>
@@ -194,9 +342,10 @@ export function PaymentProofTable({
           </tbody>
         </table>
       </div>
-      <div className="flex flex-col gap-3 border-t border-[#e5eadf] px-5 py-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+
+      <div className="hidden flex-col gap-3 border-t border-[#e5eadf] px-5 py-4 text-sm md:flex sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[#607065]">
-          Halaman {currentPage} dari {totalPages} · baris {pageStart + 1}-
+          Halaman {currentPage} dari {totalPages} - baris {pageStart + 1}-
           {Math.min(pageStart + PAGE_SIZE, filteredPayments.length)} dari{" "}
           {filteredPayments.length}
         </p>
@@ -219,6 +368,51 @@ export function PaymentProofTable({
           </button>
         </div>
       </div>
+
+      {selectedPayment ? (
+        <div className="fixed inset-0 z-50 flex items-end bg-black/35 md:hidden">
+          <section className="max-h-[84vh] w-full overflow-y-auto rounded-t-xl bg-white p-5 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase text-[#607065]">
+                  Preview bukti
+                </p>
+                <h3 className="mt-1 text-lg font-semibold">
+                  {selectedPayment.customer}
+                </h3>
+              </div>
+              <button
+                className="h-9 rounded-md border border-[#cbd4c6] px-3 text-sm font-bold"
+                onClick={() => setSelectedPayment(null)}
+                type="button"
+              >
+                Tutup
+              </button>
+            </div>
+            <div className="rounded-lg bg-[#f7f9f5] p-4 text-[#172019]">
+              <pre className="whitespace-pre-wrap font-sans text-sm leading-6">
+                {createWhatsappMessage(selectedPayment)}
+              </pre>
+            </div>
+            {selectedPayment.phone ? (
+              <a
+                className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
+                href={createWhatsappUrl(selectedPayment)}
+                target="_blank"
+              >
+                Kirim bukti ke WhatsApp
+              </a>
+            ) : (
+              <button
+                className="mt-4 h-12 w-full rounded-md bg-[#607065] px-4 text-sm font-bold text-white"
+                type="button"
+              >
+                Nomor WA belum ada
+              </button>
+            )}
+          </section>
+        </div>
+      ) : null}
     </section>
   );
 }

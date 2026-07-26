@@ -80,5 +80,10 @@ test("keeps member list paginated and searchable", async () => {
   assert.match(table, /Halaman \{currentPage\} dari \{totalPages\}/);
   assert.match(table, /Sebelumnya/);
   assert.match(table, /Selanjutnya/);
+  assert.match(table, /Muat 15 lagi/);
+  assert.match(table, /Lihat bukti/);
+  assert.match(table, /Preview bukti/);
+  assert.match(table, /Ada WA/);
+  assert.match(table, /No WA kosong/);
   assert.match(table, /<th className="px-5 py-3">No\.<\/th>/);
 });
