@@ -227,14 +227,19 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
     setMobileVisibleCount(MOBILE_PAGE_SIZE);
   };
 
-  const markAsSent = (payment: PaymentProofRow) => {
+  const toggleSent = (payment: PaymentProofRow) => {
     setSentIds((current) => {
       const next = current.includes(payment.id)
-        ? current
+        ? current.filter((id) => id !== payment.id)
         : [...current, payment.id];
       window.localStorage.setItem(SENT_STORAGE_KEY, JSON.stringify(next));
       return next;
     });
+  };
+
+  const resetSentStatuses = () => {
+    setSentIds([]);
+    window.localStorage.removeItem(SENT_STORAGE_KEY);
   };
 
   const copyMessage = async (payment: PaymentProofRow) => {
@@ -347,6 +352,15 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
               type="button"
             >
               Bersihkan
+            </button>
+          ) : null}
+          {sentIds.length ? (
+            <button
+              className="h-10 rounded-md border border-[#cbd4c6] px-3 text-xs font-bold text-[#9b392f]"
+              onClick={resetSentStatuses}
+              type="button"
+            >
+              Reset status terkirim
             </button>
           ) : null}
         </div>
@@ -481,11 +495,11 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 {payment.phone ? (
                   <button
                     className="h-11 rounded-md bg-[#172019] px-4 text-sm font-bold text-white"
-                    onClick={() => markAsSent(payment)}
+                    onClick={() => toggleSent(payment)}
                     type="button"
                   >
                     {sentIds.includes(payment.id)
-                      ? "Sudah terkirim"
+                      ? "Batalkan terkirim"
                       : "Tandai terkirim"}
                   </button>
                 ) : null}
@@ -578,10 +592,10 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                             ? "bg-[#172019] text-white"
                             : "border border-[#cbd4c6]"
                         }`}
-                        onClick={() => markAsSent(payment)}
+                        onClick={() => toggleSent(payment)}
                         type="button"
                       >
-                        {sentIds.includes(payment.id) ? "Terkirim" : "Tandai"}
+                        {sentIds.includes(payment.id) ? "Batalkan" : "Tandai"}
                       </button>
                     </div>
                   ) : (
@@ -673,11 +687,11 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
             {selectedPayment.phone ? (
               <button
                 className="mt-3 h-12 w-full rounded-md bg-[#172019] px-4 text-sm font-bold text-white"
-                onClick={() => markAsSent(selectedPayment)}
+                onClick={() => toggleSent(selectedPayment)}
                 type="button"
               >
                 {sentIds.includes(selectedPayment.id)
-                  ? "Sudah ditandai terkirim"
+                  ? "Batalkan terkirim"
                   : "Tandai terkirim"}
               </button>
             ) : null}
@@ -723,10 +737,12 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
               </button>
               <button
                 className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
-                onClick={() => markAsSent(queuePayment)}
+                onClick={() => toggleSent(queuePayment)}
                 type="button"
               >
-                {sentIds.includes(queuePayment.id) ? "Terkirim" : "Tandai terkirim"}
+                {sentIds.includes(queuePayment.id)
+                  ? "Batalkan terkirim"
+                  : "Tandai terkirim"}
               </button>
               <button
                 className="h-11 rounded-md bg-[#172019] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#607065]"

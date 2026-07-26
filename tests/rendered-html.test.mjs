@@ -95,6 +95,9 @@ test("keeps member list paginated and searchable", async () => {
   assert.match(table, /Kirim WhatsApp/);
   assert.match(table, /Copy pesan/);
   assert.match(table, /Tandai terkirim/);
+  assert.match(table, /Batalkan terkirim/);
+  assert.match(table, /Reset status terkirim/);
+  assert.match(table, /removeItem\(SENT_STORAGE_KEY\)/);
   assert.match(table, /SENT_STORAGE_KEY/);
   assert.match(table, /localStorage/);
   assert.match(table, /navigator\.clipboard\.writeText/);
