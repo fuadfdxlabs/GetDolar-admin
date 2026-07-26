@@ -407,13 +407,6 @@ const createWhatsappMessage = (payment: PaymentProofRow) =>
     "Semoga sukses dan penghasilan terus meningkat.",
   ].join("\n");
 
-const createWhatsappUrl = (payment: PaymentProofRow) =>
-  payment.phone
-    ? `https://wa.me/${payment.phone}?text=${encodeURIComponent(
-        createWhatsappMessage(payment),
-      )}`
-    : "#";
-
 const createSearchText = (payment: PaymentProofRow) =>
   [
     payment.id,
@@ -461,9 +454,6 @@ const createTablePayments = (
 export default async function Home() {
   const sheet = await getSheetData();
   const payments = sheet.payments;
-  const selectedPayment =
-    payments.find((payment) => payment.phone && payment.amount > 0) ||
-    payments[0];
   const totalAmount = payments.reduce(
     (total, payment) => total + payment.amount,
     0,
@@ -546,7 +536,7 @@ export default async function Home() {
           </div>
         </header>
 
-        <div className="grid gap-6 px-5 py-6 md:px-8 xl:grid-cols-[1fr_390px]">
+        <div className="grid gap-6 px-5 py-6 md:px-8">
           <div className="space-y-6">
             {sheet.source === "fallback" ? (
               <section className="rounded-lg border border-[#e5c66a] bg-[#fff8df] p-4 text-sm text-[#5c4711]">
@@ -582,32 +572,6 @@ export default async function Home() {
 
             <PaymentProofTable payments={tablePayments} />
           </div>
-
-          <aside className="space-y-6">
-            <section className="rounded-lg border border-[#d8ded2] bg-[#172019] p-5 text-white">
-              <p className="text-sm font-semibold text-[#e6ff7a]">
-                Preview pesan WhatsApp
-              </p>
-              <div className="mt-4 rounded-lg bg-white p-4 text-[#172019]">
-                <pre className="whitespace-pre-wrap text-sm leading-6 font-sans">
-                  {createWhatsappMessage(selectedPayment)}
-                </pre>
-              </div>
-              {selectedPayment.phone ? (
-                <a
-                  className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
-                  href={createWhatsappUrl(selectedPayment)}
-                  target="_blank"
-                >
-                  Kirim bukti pembayaran ke WhatsApp
-                </a>
-              ) : (
-                <button className="mt-4 h-11 w-full rounded-md bg-[#607065] px-4 text-sm font-bold text-white">
-                  Nomor WA belum ada
-                </button>
-              )}
-            </section>
-          </aside>
         </div>
       </section>
     </main>

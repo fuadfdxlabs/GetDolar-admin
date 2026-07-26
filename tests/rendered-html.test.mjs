@@ -36,8 +36,7 @@ test("server-renders the payment proof WhatsApp dashboard", async () => {
   assert.match(html, /Bukti Pembayaran/);
   assert.match(html, /Diterima Bersih/);
   assert.match(html, /ID Member/);
-  assert.match(html, /Preview pesan WhatsApp/);
-  assert.match(html, /Kirim bukti pembayaran ke WhatsApp/);
+  assert.match(html, /Preview pesan WA/);
   assert.match(html, /1523444064/);
   assert.match(html, /INV-2026-0726-001/);
   assert.match(html, /https:\/\/wa\.me\/6281324616717\?text=/);
@@ -61,8 +60,6 @@ test("keeps starter preview removed from product source", async () => {
   assert.match(page, /rowsToObjects/);
   assert.match(page, /mapRowsToPayments/);
   assert.match(page, /BUKTI PEMBAYARAN/);
-  assert.match(page, /encodeURIComponent/);
-  assert.match(page, /wa\.me/);
   assert.doesNotMatch(page, /payments\.slice\(0,\s*12\)/);
   assert.match(layout, /title:\s*"GetDolar Admin"/);
   assert.doesNotMatch(page, /SkeletonPreview|_sites-preview|codex-preview/);
@@ -87,6 +84,10 @@ test("keeps member list paginated and searchable", async () => {
   assert.match(table, /No WA kosong/);
   assert.match(table, /Pilih tampil/);
   assert.match(table, /Pilih hasil filter/);
+  assert.match(table, /Preview pesan WA/);
+  assert.match(table, /showDefaultPreview/);
+  assert.match(table, /encodeURIComponent/);
+  assert.match(table, /wa\.me/);
   assert.match(table, /Kirim dipilih/);
   assert.match(table, /Antrean kirim/);
   assert.match(table, /Kirim WhatsApp/);

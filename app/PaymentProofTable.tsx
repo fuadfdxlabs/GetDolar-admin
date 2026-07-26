@@ -104,6 +104,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [queue, setQueue] = useState<PaymentProofRow[]>([]);
   const [queueIndex, setQueueIndex] = useState(0);
+  const [showDefaultPreview, setShowDefaultPreview] = useState(false);
 
   const filteredPayments = useMemo(() => {
     const filteredByType = payments.filter((payment) => {
@@ -148,6 +149,10 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const visiblePayments = filteredPayments.slice(pageStart, pageStart + PAGE_SIZE);
   const visibleMobilePayments = filteredPayments.slice(0, mobileVisibleCount);
+  const defaultPreviewPayment =
+    filteredPayments.find((payment) => payment.phone && payment.amount > 0) ||
+    filteredPayments[0] ||
+    payments[0];
   const selectedPayments = payments.filter((payment) =>
     selectedIds.includes(payment.id),
   );
@@ -244,6 +249,15 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
           ))}
         </div>
         <div className="flex flex-wrap gap-2">
+          {defaultPreviewPayment ? (
+            <button
+              className="h-10 rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
+              onClick={() => setShowDefaultPreview((value) => !value)}
+              type="button"
+            >
+              {showDefaultPreview ? "Tutup preview WA" : "Preview pesan WA"}
+            </button>
+          ) : null}
           <button
             className="h-10 rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
             onClick={() =>
@@ -282,6 +296,44 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
           ) : null}
         </div>
       </div>
+
+      {showDefaultPreview && defaultPreviewPayment ? (
+        <div className="border-b border-[#e5eadf] bg-[#172019] p-4 text-white">
+          <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+            <div className="rounded-lg bg-white p-4 text-[#172019]">
+              <pre className="whitespace-pre-wrap font-sans text-sm leading-6">
+                {createWhatsappMessage(defaultPreviewPayment)}
+              </pre>
+            </div>
+            <div className="flex flex-col justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase text-[#e6ff7a]">
+                  Preview pesan WA
+                </p>
+                <h3 className="mt-1 text-base font-semibold">
+                  {defaultPreviewPayment.customer}
+                </h3>
+              </div>
+              {defaultPreviewPayment.phone ? (
+                <a
+                  className="inline-flex h-11 items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
+                  href={createWhatsappUrl(defaultPreviewPayment)}
+                  target="_blank"
+                >
+                  Kirim bukti ke WhatsApp
+                </a>
+              ) : (
+                <button
+                  className="h-11 rounded-md bg-[#607065] px-4 text-sm font-bold text-white"
+                  type="button"
+                >
+                  Nomor WA belum ada
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="block md:hidden">
         <div className="divide-y divide-[#edf0e9]">
