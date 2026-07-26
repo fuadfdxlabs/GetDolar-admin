@@ -11,7 +11,7 @@ export const revalidate = 60;
 const SHEET_ID = "1igG8M1bQEo6QaE9_y-OyPMLoNs4y6skeO6oKkuorPMo";
 const SHEET_GID = "1523444064";
 const SHEET_NAME = "Pend_Per_Member_Final";
-const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`;
+const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
 
 type SheetRow = Record<string, string>;
 
@@ -35,36 +35,52 @@ type SheetResult = {
 
 const fallbackRows: SheetRow[] = [
   {
-    Invoice: "INV-2026-0726-001",
-    Nama: "Raka Pratama",
-    WhatsApp: "6281288809911",
-    Produk: "Top Up USD Wallet",
-    Pendapatan: "2450000",
+    Periode: "13/07/2026-19/07/2026",
+    Member_ID: "smart-link-3219950 - Asep_sya_mjk - 30276867",
+    Hasil_Bersih_Rp: "227523",
+    No_Invoice: "INV-2026-0726-001",
+    nama: "Asep Syaefullah",
+    no_hp: "081324616717",
+    Tujuan_Pembayaran: "DANA",
     Status: "Menunggu",
-    Tanggal: "26 Jul 2026",
+    Tanggal_Bayar: "26 Jul 2026",
   },
   {
-    Invoice: "INV-2026-0725-014",
-    Nama: "Nadia Store",
-    WhatsApp: "6285770014432",
-    Produk: "Pembelian Saldo Dolar",
-    Pendapatan: "8750000",
+    Periode: "13/07/2026-19/07/2026",
+    Member_ID: "smart-link-3219950 - Nurf uadi - 30286356",
+    Hasil_Bersih_Rp: "237927",
+    No_Invoice: "INV-2026-0725-014",
+    nama: "Nurf uadi",
+    no_hp: "082120044715",
+    Tujuan_Pembayaran: "DANA",
     Status: "Dibayar",
-    Tanggal: "25 Jul 2026",
+    Tanggal_Bayar: "25 Jul 2026",
   },
   {
-    Invoice: "INV-2026-0724-009",
-    Nama: "Kirana Media",
-    WhatsApp: "6282114402231",
-    Produk: "Invoice Campaign",
-    Pendapatan: "3250000",
+    Periode: "13/07/2026-19/07/2026",
+    Member_ID: "smart-link-3219950 - Juju.Mjk - 30276878",
+    Hasil_Bersih_Rp: "127293",
+    No_Invoice: "INV-2026-0724-009",
+    nama: "Juju Juariah",
+    no_hp: "085224221377",
+    Tujuan_Pembayaran: "DANA",
     Status: "Jatuh Tempo",
-    Tanggal: "24 Jul 2026",
+    Tanggal_Bayar: "24 Jul 2026",
   },
 ];
 
 const aliases = {
-  id: ["invoice", "invoice id", "id", "kode", "order", "trx", "transaksi"],
+  id: [
+    "no invoice",
+    "no_invoice",
+    "invoice",
+    "invoice id",
+    "id",
+    "kode",
+    "order",
+    "trx",
+    "transaksi",
+  ],
   customer: [
     "nama",
     "nama member",
@@ -85,10 +101,29 @@ const aliases = {
     "telepon",
     "hp",
     "no hp",
+    "no_hp",
     "nomor",
   ],
-  package: ["produk", "paket", "item", "layanan", "service", "tipe", "jenis"],
+  package: [
+    "tujuan pembayaran",
+    "tujuan_pembayaran",
+    "metode pembayaran",
+    "metode_pembayaran",
+    "member id",
+    "member_id",
+    "produk",
+    "paket",
+    "item",
+    "layanan",
+    "service",
+    "tipe",
+    "jenis",
+  ],
   amount: [
+    "hasil bersih rp",
+    "hasil_bersih_rp",
+    "total rp",
+    "total_rp",
     "pendapatan",
     "income",
     "nominal",
@@ -101,7 +136,16 @@ const aliases = {
     "fee",
   ],
   status: ["status", "keterangan", "payment status"],
-  due: ["tanggal", "date", "tgl", "jatuh tempo", "deadline"],
+  due: [
+    "tanggal bayar",
+    "tanggal_bayar",
+    "periode",
+    "tanggal",
+    "date",
+    "tgl",
+    "jatuh tempo",
+    "deadline",
+  ],
 };
 
 const normalize = (value: string) =>
@@ -199,7 +243,9 @@ const mapRowsToInvoices = (rows: SheetRow[], headers: string[]) =>
       id:
         pickValue(row, headers, aliases.id, "") ||
         `ROW-${String(index + 1).padStart(4, "0")}`,
-      customer: pickValue(row, headers, aliases.customer, "Tanpa Nama"),
+      customer:
+        pickValue(row, headers, aliases.customer, "") ||
+        pickValue(row, headers, ["member id", "member_id"], "Tanpa Nama"),
       phone: sanitizePhone(pickValue(row, headers, aliases.phone, "")),
       package: pickValue(row, headers, aliases.package, SHEET_NAME),
       amount,

@@ -38,8 +38,8 @@ test("server-renders the invoice WhatsApp dashboard", async () => {
   assert.match(html, /Kirim invoice ke WhatsApp/);
   assert.match(html, /1523444064/);
   assert.match(html, /INV-2026-0726-001/);
-  assert.match(html, /https:\/\/wa\.me\/6281288809911\?text=/);
-  assert.match(html, /Halo%20Raka%20Pratama/);
+  assert.match(html, /https:\/\/wa\.me\/6281324616717\?text=/);
+  assert.match(html, /Halo%20Asep%20Syaefullah/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
 
