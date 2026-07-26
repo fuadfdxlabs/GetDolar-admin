@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "GetDolar Admin Dashboard",
   description:
-    "Kelola invoice dari Pend_Per_Member_Final dan kirim tagihan ke WhatsApp.",
+    "Kirim bukti pembayaran member dari Pend_Per_Member_Final ke WhatsApp.",
 };
 
 export const revalidate = 60;
@@ -11,23 +11,33 @@ export const revalidate = 60;
 const SHEET_ID = "1igG8M1bQEo6QaE9_y-OyPMLoNs4y6skeO6oKkuorPMo";
 const SHEET_GID = "1523444064";
 const SHEET_NAME = "Pend_Per_Member_Final";
+const PROOF_TEMPLATE_SHEET = "Bukti_Pembayaran";
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
 
 type SheetRow = Record<string, string>;
 
-type InvoiceRow = {
+type PaymentProofRow = {
   id: string;
   customer: string;
   phone: string;
-  package: string;
+  memberId: string;
+  method: string;
+  destination: string;
+  revenue: number;
+  referral: number;
+  totalDollar: number;
+  kurs: number;
+  totalRupiah: number;
+  adminFee: number;
   amount: number;
   status: string;
-  due: string;
+  period: string;
+  paidAt: string;
   raw: SheetRow;
 };
 
 type SheetResult = {
-  invoices: InvoiceRow[];
+  payments: PaymentProofRow[];
   headers: string[];
   source: "google-sheet" | "fallback";
   error?: string;
@@ -104,13 +114,20 @@ const aliases = {
     "no_hp",
     "nomor",
   ],
-  package: [
-    "tujuan pembayaran",
-    "tujuan_pembayaran",
+  memberId: ["member id", "member_id", "domain id", "domain_id"],
+  method: [
     "metode pembayaran",
     "metode_pembayaran",
-    "member id",
-    "member_id",
+    "metode",
+    "bank",
+    "payment method",
+  ],
+  destination: [
+    "tujuan pembayaran",
+    "tujuan_pembayaran",
+    "no rekening",
+    "no_rekening",
+    "rekening",
     "produk",
     "paket",
     "item",
@@ -135,16 +152,22 @@ const aliases = {
     "komisi",
     "fee",
   ],
+  revenue: ["revenue $", "revenue_$", "revenue", "pendapatan dollar"],
+  referral: ["referral $", "referral_$", "referral"],
+  totalDollar: ["jumlah $", "jumlah_$", "total dollar $", "total dollar"],
+  kurs: ["kurs"],
+  totalRupiah: ["total rp", "total_rp", "total rupiah"],
+  adminFee: ["biaya rp", "biaya_rp", "biaya admin", "biaya_admin"],
   status: ["status", "keterangan", "payment status"],
-  due: [
+  period: ["periode", "period"],
+  paidAt: [
     "tanggal bayar",
     "tanggal_bayar",
-    "periode",
+    "tanggal pembayaran",
+    "tanggal_pembayaran",
     "tanggal",
     "date",
     "tgl",
-    "jatuh tempo",
-    "deadline",
   ],
 };
 
@@ -235,9 +258,10 @@ const parseAmount = (value: string) => {
   return Number.isFinite(number) ? number : 0;
 };
 
-const mapRowsToInvoices = (rows: SheetRow[], headers: string[]) =>
+const mapRowsToPayments = (rows: SheetRow[], headers: string[]) =>
   rows.map((row, index) => {
     const amount = parseAmount(pickValue(row, headers, aliases.amount, "0"));
+    const memberId = pickValue(row, headers, aliases.memberId, "-");
 
     return {
       id:
@@ -245,12 +269,23 @@ const mapRowsToInvoices = (rows: SheetRow[], headers: string[]) =>
         `ROW-${String(index + 1).padStart(4, "0")}`,
       customer:
         pickValue(row, headers, aliases.customer, "") ||
-        pickValue(row, headers, ["member id", "member_id"], "Tanpa Nama"),
+        memberId,
       phone: sanitizePhone(pickValue(row, headers, aliases.phone, "")),
-      package: pickValue(row, headers, aliases.package, SHEET_NAME),
+      memberId,
+      method: pickValue(row, headers, aliases.method, "-"),
+      destination: pickValue(row, headers, aliases.destination, "-"),
+      revenue: parseAmount(pickValue(row, headers, aliases.revenue, "0")),
+      referral: parseAmount(pickValue(row, headers, aliases.referral, "0")),
+      totalDollar: parseAmount(
+        pickValue(row, headers, aliases.totalDollar, "0"),
+      ),
+      kurs: parseAmount(pickValue(row, headers, aliases.kurs, "0")),
+      totalRupiah: parseAmount(pickValue(row, headers, aliases.totalRupiah, "0")),
+      adminFee: parseAmount(pickValue(row, headers, aliases.adminFee, "0")),
       amount,
       status: pickValue(row, headers, aliases.status, "Siap Kirim"),
-      due: pickValue(row, headers, aliases.due, "hari ini"),
+      period: pickValue(row, headers, aliases.period, "-"),
+      paidAt: pickValue(row, headers, aliases.paidAt, "-"),
       raw: row,
     };
   });
@@ -276,7 +311,7 @@ async function getSheetData(): Promise<SheetResult> {
     }
 
     return {
-      invoices: mapRowsToInvoices(rows, headers),
+      payments: mapRowsToPayments(rows, headers),
       headers,
       source: "google-sheet",
     };
@@ -284,7 +319,7 @@ async function getSheetData(): Promise<SheetResult> {
     const headers = Object.keys(fallbackRows[0]);
 
     return {
-      invoices: mapRowsToInvoices(fallbackRows, headers),
+      payments: mapRowsToPayments(fallbackRows, headers),
       headers,
       source: "fallback",
       error:
@@ -302,22 +337,56 @@ const formatRupiah = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-const createWhatsappMessage = (invoice: InvoiceRow) =>
-  `Halo ${invoice.customer}, berikut invoice ${invoice.id} untuk ${invoice.package} sebesar ${formatRupiah(invoice.amount)}. Mohon lakukan pembayaran ${invoice.due !== "-" ? `sebelum ${invoice.due}` : "sesuai tagihan"}. Terima kasih.`;
+const formatDollar = (value: number) =>
+  new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 
-const createWhatsappUrl = (invoice: InvoiceRow) =>
-  invoice.phone
-    ? `https://wa.me/${invoice.phone}?text=${encodeURIComponent(
-        createWhatsappMessage(invoice),
+const createWhatsappMessage = (payment: PaymentProofRow) =>
+  [
+    "GET DOLAR TA-01",
+    "BUKTI PEMBAYARAN",
+    "",
+    `Halo ${payment.customer}, pembayaran periode ${payment.period} sudah kami proses.`,
+    "",
+    `ID Member: ${payment.memberId}`,
+    `No. Invoice: ${payment.id}`,
+    `Revenue ($): ${formatDollar(payment.revenue)}`,
+    `Referral ($): ${formatDollar(payment.referral)}`,
+    `Total Dollar ($): ${formatDollar(payment.totalDollar)}`,
+    `Kurs: ${formatRupiah(payment.kurs).replace("Rp", "Rp ")}`,
+    `Total Rupiah: ${formatRupiah(payment.totalRupiah)}`,
+    `Biaya Admin: ${formatRupiah(payment.adminFee)}`,
+    `DITERIMA BERSIH: ${formatRupiah(payment.amount)}`,
+    "",
+    `Metode Pembayaran: ${payment.method}`,
+    `Tujuan Pembayaran: ${payment.destination}`,
+    `Tanggal Pembayaran: ${payment.paidAt}`,
+    "",
+    "Diproses oleh GET DOLAR TA-01",
+    "Terima kasih atas partisipasi Anda.",
+    "Semoga sukses dan penghasilan terus meningkat.",
+  ].join("\n");
+
+const createWhatsappUrl = (payment: PaymentProofRow) =>
+  payment.phone
+    ? `https://wa.me/${payment.phone}?text=${encodeURIComponent(
+        createWhatsappMessage(payment),
       )}`
     : "#";
 
 export default async function Home() {
   const sheet = await getSheetData();
-  const invoices = sheet.invoices;
-  const selectedInvoice = invoices[0];
-  const totalAmount = invoices.reduce((total, invoice) => total + invoice.amount, 0);
-  const whatsappReady = invoices.filter((invoice) => invoice.phone).length;
+  const payments = sheet.payments;
+  const selectedPayment =
+    payments.find((payment) => payment.phone && payment.amount > 0) ||
+    payments[0];
+  const totalAmount = payments.reduce(
+    (total, payment) => total + payment.amount,
+    0,
+  );
+  const whatsappReady = payments.filter((payment) => payment.phone).length;
   const tableHeaders = sheet.headers.slice(0, 7);
 
   return (
@@ -332,7 +401,7 @@ export default async function Home() {
           </h1>
         </div>
         <nav className="space-y-1 text-sm">
-          {["Dashboard", SHEET_NAME, "Customer", "Pembayaran", "Laporan"].map(
+          {["Dashboard", SHEET_NAME, PROOF_TEMPLATE_SHEET, "Pembayaran", "Laporan"].map(
             (item, index) => (
               <a
                 className={`flex items-center justify-between rounded-md px-3 py-2.5 ${
@@ -345,7 +414,7 @@ export default async function Home() {
               >
                 <span className="truncate">{item}</span>
                 {index === 1 ? (
-                  <span className="text-xs">{invoices.length}</span>
+                  <span className="text-xs">{payments.length}</span>
                 ) : null}
               </a>
             ),
@@ -354,7 +423,7 @@ export default async function Home() {
         <div className="absolute bottom-6 left-5 right-5 rounded-lg border border-white/10 bg-white/5 p-4">
           <p className="text-sm font-semibold">WhatsApp aktif</p>
           <p className="mt-1 text-xs leading-5 text-[#b8c9ba]">
-            Data invoice dibaca dari tab Google Sheet yang dipilih.
+            Bukti pembayaran dibuat dari data member yang sudah dibayar.
           </p>
         </div>
       </aside>
@@ -367,7 +436,7 @@ export default async function Home() {
                 Source: {SHEET_NAME}
               </p>
               <h2 className="mt-1 text-2xl font-semibold tracking-normal md:text-3xl">
-                Invoice WhatsApp
+                Bukti Pembayaran WhatsApp
               </h2>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -395,15 +464,15 @@ export default async function Home() {
                 <p className="font-semibold">Google Sheet belum kebaca publik.</p>
                 <p className="mt-1 leading-6">
                   Dashboard sudah diarahkan ke tab {SHEET_NAME}, tapi sementara
-                  menampilkan contoh data. Detail: {sheet.error}
+                  menampilkan contoh bukti pembayaran. Detail: {sheet.error}
                 </p>
               </section>
             ) : null}
 
             <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {[
-                ["Baris sheet", String(invoices.length), SHEET_NAME],
-                ["Total pendapatan", formatRupiah(totalAmount), "dari kolom nominal"],
+                ["Baris sheet", String(payments.length), SHEET_NAME],
+                ["Total dibayar", formatRupiah(totalAmount), "dari Hasil_Bersih_Rp"],
                 ["Nomor WA siap", `${whatsappReady}`, "bisa dikirim"],
                 [
                   "Status sync",
@@ -431,7 +500,7 @@ export default async function Home() {
                 <div>
                   <h3 className="text-lg font-semibold">Mapping Google Sheet</h3>
                   <p className="text-sm text-[#607065]">
-                    Kolom dari {SHEET_NAME} dipakai untuk bikin pesan WhatsApp.
+                    Kolom dari {SHEET_NAME} dipakai untuk bikin bukti pembayaran.
                   </p>
                 </div>
                 <span className="rounded-md bg-[#e6ff7a] px-3 py-1 text-xs font-bold text-[#172019]">
@@ -441,12 +510,12 @@ export default async function Home() {
 
               <div className="mt-5 grid gap-3 md:grid-cols-3">
                 {[
-                  ["Nama", selectedInvoice.customer],
-                  ["WhatsApp", selectedInvoice.phone || "Belum ada nomor"],
-                  ["Nominal", formatRupiah(selectedInvoice.amount)],
-                  ["Invoice", selectedInvoice.id],
-                  ["Produk", selectedInvoice.package],
-                  ["Status", selectedInvoice.status],
+                  ["Nama", selectedPayment.customer],
+                  ["WhatsApp", selectedPayment.phone || "Belum ada nomor"],
+                  ["Diterima Bersih", formatRupiah(selectedPayment.amount)],
+                  ["No. Invoice", selectedPayment.id],
+                  ["ID Member", selectedPayment.memberId],
+                  ["Status", selectedPayment.status],
                 ].map(([label, value]) => (
                   <div
                     className="rounded-lg border border-[#e5eadf] bg-[#f9faf6] p-3"
@@ -471,11 +540,11 @@ export default async function Home() {
                 <div>
                   <h3 className="text-lg font-semibold">{SHEET_NAME}</h3>
                   <p className="text-sm text-[#607065]">
-                    Menampilkan data langsung dari worksheet yang dipilih.
+                    Menampilkan data pembayaran yang jadi sumber bukti.
                   </p>
                 </div>
                 <span className="rounded-md border border-[#cbd4c6] px-3 py-2 text-sm font-semibold">
-                  {invoices.length} baris
+                  {payments.length} baris
                 </span>
               </div>
               <div className="overflow-x-auto">
@@ -491,20 +560,20 @@ export default async function Home() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#edf0e9]">
-                    {invoices.slice(0, 12).map((invoice, index) => (
-                      <tr key={`${invoice.id}-${index}`}>
+                    {payments.slice(0, 12).map((payment, index) => (
+                      <tr key={`${payment.id}-${index}`}>
                         {tableHeaders.map((header) => (
                           <td className="max-w-52 px-5 py-4" key={header}>
                             <span className="line-clamp-2">
-                              {invoice.raw[header] || "-"}
+                              {payment.raw[header] || "-"}
                             </span>
                           </td>
                         ))}
                         <td className="px-5 py-4">
-                          {invoice.phone ? (
+                          {payment.phone ? (
                             <a
                               className="rounded-md bg-[#25d366] px-3 py-2 text-xs font-bold text-[#062511]"
-                              href={createWhatsappUrl(invoice)}
+                              href={createWhatsappUrl(payment)}
                               target="_blank"
                             >
                               Kirim WA
@@ -529,17 +598,17 @@ export default async function Home() {
                 Preview pesan WhatsApp
               </p>
               <div className="mt-4 rounded-lg bg-white p-4 text-[#172019]">
-                <p className="text-sm leading-6">
-                  {createWhatsappMessage(selectedInvoice)}
-                </p>
+                <pre className="whitespace-pre-wrap text-sm leading-6 font-sans">
+                  {createWhatsappMessage(selectedPayment)}
+                </pre>
               </div>
-              {selectedInvoice.phone ? (
+              {selectedPayment.phone ? (
                 <a
                   className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
-                  href={createWhatsappUrl(selectedInvoice)}
+                  href={createWhatsappUrl(selectedPayment)}
                   target="_blank"
                 >
-                  Kirim invoice ke WhatsApp
+                  Kirim bukti pembayaran ke WhatsApp
                 </a>
               ) : (
                 <button className="mt-4 h-11 w-full rounded-md bg-[#607065] px-4 text-sm font-bold text-white">
@@ -552,10 +621,10 @@ export default async function Home() {
               <h3 className="text-lg font-semibold">Cara connect</h3>
               <ol className="mt-4 space-y-4 text-sm">
                 {[
-                  `Dashboard fetch tab ${SHEET_NAME} via gid ${SHEET_GID}.`,
-                  "Header sheet dibaca otomatis dari baris pertama.",
-                  "Kolom nama, WhatsApp, nominal, status, dan produk dimapping ke invoice.",
-                  "Tombol kirim membuat link WhatsApp berisi pesan tagihan.",
+                  `Data pembayaran diambil dari ${SHEET_NAME} via gid ${SHEET_GID}.`,
+                  `Format pesan mengikuti template ${PROOF_TEMPLATE_SHEET}.`,
+                  "Kolom nama, no_hp, Hasil_Bersih_Rp, revenue, referral, dan kurs dimapping otomatis.",
+                  "Tombol kirim membuat link WhatsApp berisi bukti pembayaran.",
                 ].map((step, index) => (
                   <li className="flex gap-3" key={step}>
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#e6ff7a] text-xs font-bold">
@@ -568,18 +637,18 @@ export default async function Home() {
             </section>
 
             <section className="rounded-lg border border-[#d8ded2] bg-white p-5">
-              <h3 className="text-lg font-semibold">Agar live kebaca</h3>
+              <h3 className="text-lg font-semibold">Format bukti</h3>
               <div className="mt-4 space-y-3 text-sm text-[#3e4d43]">
                 <p>
-                  Set sharing Google Sheet ke viewer untuk link, atau publish
-                  sheet ke web.
+                  Pesan berisi ringkasan Revenue, Referral, Total Dollar, Kurs,
+                  Total Rupiah, Biaya Admin, dan Diterima Bersih.
                 </p>
                 <p>
-                  Pastikan baris pertama berisi header, terutama kolom nama,
-                  WhatsApp, dan pendapatan/nominal.
+                  Ini bukan tagihan pembayaran, tapi konfirmasi bahwa GetDolar
+                  sudah memproses pembayaran ke member.
                 </p>
                 <p>
-                  Tab yang dipakai hanya {SHEET_NAME}, sesuai request bray.
+                  Template referensi: {PROOF_TEMPLATE_SHEET}.
                 </p>
               </div>
             </section>

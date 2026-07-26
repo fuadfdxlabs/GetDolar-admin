@@ -23,7 +23,7 @@ async function render() {
   );
 }
 
-test("server-renders the invoice WhatsApp dashboard", async () => {
+test("server-renders the payment proof WhatsApp dashboard", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
@@ -31,11 +31,12 @@ test("server-renders the invoice WhatsApp dashboard", async () => {
   const html = await response.text();
   assert.match(html, /<html lang="id">/i);
   assert.match(html, /<title>GetDolar Admin Dashboard<\/title>/i);
-  assert.match(html, /Invoice WhatsApp/);
+  assert.match(html, /Bukti Pembayaran WhatsApp/);
   assert.match(html, /Pend_Per_Member_Final/);
+  assert.match(html, /Bukti_Pembayaran/);
   assert.match(html, /Mapping Google Sheet/);
   assert.match(html, /Preview pesan WhatsApp/);
-  assert.match(html, /Kirim invoice ke WhatsApp/);
+  assert.match(html, /Kirim bukti pembayaran ke WhatsApp/);
   assert.match(html, /1523444064/);
   assert.match(html, /INV-2026-0726-001/);
   assert.match(html, /https:\/\/wa\.me\/6281324616717\?text=/);
@@ -51,10 +52,12 @@ test("keeps starter preview removed from product source", async () => {
   ]);
 
   assert.match(page, /SHEET_NAME = "Pend_Per_Member_Final"/);
+  assert.match(page, /PROOF_TEMPLATE_SHEET = "Bukti_Pembayaran"/);
   assert.match(page, /SHEET_GID = "1523444064"/);
   assert.match(page, /SHEET_CSV_URL/);
   assert.match(page, /rowsToObjects/);
-  assert.match(page, /mapRowsToInvoices/);
+  assert.match(page, /mapRowsToPayments/);
+  assert.match(page, /BUKTI PEMBAYARAN/);
   assert.match(page, /encodeURIComponent/);
   assert.match(page, /wa\.me/);
   assert.match(layout, /title:\s*"GetDolar Admin"/);
