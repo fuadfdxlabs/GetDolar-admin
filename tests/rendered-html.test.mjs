@@ -2,14 +2,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-async function render() {
+const ADMIN_COOKIE = "getdolar_admin_session=getdolar-admin-authenticated";
+
+async function render(headers = {}) {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
 
   return worker.fetch(
     new Request("http://localhost/", {
-      headers: { accept: "text/html" },
+      headers: { accept: "text/html", ...headers },
     }),
     {
       ASSETS: {
@@ -23,8 +25,19 @@ async function render() {
   );
 }
 
-test("server-renders the payment proof WhatsApp dashboard", async () => {
+test("requires login before showing the dashboard", async () => {
   const response = await render();
+  assert.equal(response.status, 200);
+
+  const html = await response.text();
+  assert.match(html, /Login Admin/);
+  assert.match(html, /name="username"/);
+  assert.match(html, /name="password"/);
+  assert.doesNotMatch(html, /Pendapatan per Member/);
+});
+
+test("server-renders the payment proof WhatsApp dashboard", async () => {
+  const response = await render({ cookie: ADMIN_COOKIE });
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
@@ -32,6 +45,7 @@ test("server-renders the payment proof WhatsApp dashboard", async () => {
   assert.match(html, /<html lang="id">/i);
   assert.match(html, /<title>GetDolar Admin Dashboard<\/title>/i);
   assert.match(html, /Bukti Pembayaran WhatsApp/);
+  assert.match(html, /Logout/);
   assert.match(html, /Pendapatan per Member/);
   assert.match(html, /Bukti Pembayaran/);
   assert.match(html, /Diterima Bersih/);
@@ -44,6 +58,58 @@ test("server-renders the payment proof WhatsApp dashboard", async () => {
   assert.doesNotMatch(html, /Pend_Per_Member_Final|Bukti_Pembayaran|Hasil_Bersih_Rp|Member_ID|No_Invoice/);
   assert.doesNotMatch(html, /Mapping Google Sheet|Cara connect|Format bukti/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
+});
+
+test("sets and clears the admin session cookie", async () => {
+  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
+  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}-login`);
+  const { default: worker } = await import(workerUrl.href);
+
+  const loginResponse = await worker.fetch(
+    new Request("http://localhost/api/login", {
+      body: new URLSearchParams({
+        username: "admin",
+        password: "admin4321",
+      }),
+      method: "POST",
+    }),
+    {
+      ASSETS: {
+        fetch: async () => new Response("Not found", { status: 404 }),
+      },
+    },
+    {
+      waitUntil() {},
+      passThroughOnException() {},
+    },
+  );
+
+  assert.equal(loginResponse.status, 303);
+  assert.match(
+    loginResponse.headers.get("set-cookie") ?? "",
+    /getdolar_admin_session=getdolar-admin-authenticated/,
+  );
+
+  const logoutResponse = await worker.fetch(
+    new Request("http://localhost/api/logout", {
+      method: "POST",
+    }),
+    {
+      ASSETS: {
+        fetch: async () => new Response("Not found", { status: 404 }),
+      },
+    },
+    {
+      waitUntil() {},
+      passThroughOnException() {},
+    },
+  );
+
+  assert.equal(logoutResponse.status, 303);
+  assert.match(
+    logoutResponse.headers.get("set-cookie") ?? "",
+    /getdolar_admin_session=;.+Max-Age=0/,
+  );
 });
 
 test("serves payment proof PDFs by invoice link", async () => {
@@ -88,7 +154,7 @@ test("keeps starter preview removed from product source", async () => {
   assert.match(page, /SHEET_CSV_URL/);
   assert.match(page, /rowsToObjects/);
   assert.match(page, /mapRowsToPayments/);
-  assert.match(page, /BUKTI PEMBAYARAN/);
+  assert.match(page, /Login Admin/);
   assert.doesNotMatch(page, /payments\.slice\(0,\s*12\)/);
   assert.match(layout, /title:\s*"GetDolar Admin"/);
   assert.doesNotMatch(page, /SkeletonPreview|_sites-preview|codex-preview/);

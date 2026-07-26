@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { PaymentProofTable } from "./PaymentProofTable";
 
 export const metadata: Metadata = {
@@ -7,7 +8,7 @@ export const metadata: Metadata = {
     "Kirim bukti pembayaran member GetDolar ke WhatsApp.",
 };
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 const SHEET_ID = "1igG8M1bQEo6QaE9_y-OyPMLoNs4y6skeO6oKkuorPMo";
 const SHEET_GID = "1523444064";
@@ -16,6 +17,8 @@ const PROOF_TEMPLATE_SHEET = "Bukti_Pembayaran";
 const SHEET_DISPLAY_NAME = "Pendapatan per Member";
 const PROOF_TEMPLATE_DISPLAY_NAME = "Bukti Pembayaran";
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+const ADMIN_SESSION_COOKIE = "getdolar_admin_session";
+const ADMIN_SESSION_VALUE = "getdolar-admin-authenticated";
 
 type SheetRow = Record<string, string>;
 
@@ -393,36 +396,6 @@ const formatPaymentDate = (date = new Date()) =>
     year: "numeric",
   }).format(date);
 
-const createWhatsappMessage = (payment: PaymentProofRow) =>
-  [
-    "GET DOLAR",
-    "BUKTI PEMBAYARAN",
-    "",
-    `Halo ${payment.customer}, pembayaran periode ${payment.period} sudah kami proses.`,
-    "",
-    `ID Member: ${displayText(payment.memberId)}`,
-    `No. Invoice: ${payment.id}`,
-    `Revenue ($): ${formatDollar(payment.revenue)}`,
-    `Referral ($): ${formatDollar(payment.referral)}`,
-    `Total Dollar ($): ${formatDollar(payment.totalDollar)}`,
-    `Kurs: ${formatRupiah(payment.kurs).replace("Rp", "Rp ")}`,
-    `Total Rupiah: ${formatRupiah(payment.totalRupiah)}`,
-    `Biaya Admin: ${formatRupiah(payment.adminFee)}`,
-    `DITERIMA BERSIH: ${formatRupiah(payment.amount)}`,
-    "",
-    ...(hasValue(payment.method)
-      ? [`Metode Pembayaran: ${payment.method}`]
-      : []),
-    ...(hasValue(payment.destination)
-      ? [`Tujuan Pembayaran: ${payment.destination}`]
-      : []),
-    `Tanggal Pembayaran: ${formatPaymentDate()}`,
-    "",
-    "Diproses oleh GET DOLAR",
-    "Terima kasih atas partisipasi Anda.",
-    "Semoga sukses dan penghasilan terus meningkat.",
-  ].join("\n");
-
 const createSearchText = (payment: PaymentProofRow) =>
   [
     payment.id,
@@ -467,7 +440,67 @@ const createTablePayments = (
     searchText: createSearchText(payment),
   }));
 
-export default async function Home() {
+const isAuthenticated = async () => {
+  const cookieStore = await cookies();
+  return cookieStore.get(ADMIN_SESSION_COOKIE)?.value === ADMIN_SESSION_VALUE;
+};
+
+function LoginScreen({ hasError }: { hasError: boolean }) {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#f5f7f4] px-5 text-[#172019]">
+      <section className="w-full max-w-sm rounded-lg border border-[#d8ded2] bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#607065]">
+          GET DOLAR
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold">Login Admin</h1>
+        <form action="/api/login" className="mt-6 grid gap-4" method="post">
+          <label className="grid gap-2 text-sm font-semibold">
+            Username
+            <input
+              autoComplete="username"
+              className="h-11 rounded-md border border-[#cbd4c6] px-3 text-sm outline-none focus:border-[#172019]"
+              name="username"
+              required
+              type="text"
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-semibold">
+            Password
+            <input
+              autoComplete="current-password"
+              className="h-11 rounded-md border border-[#cbd4c6] px-3 text-sm outline-none focus:border-[#172019]"
+              name="password"
+              required
+              type="password"
+            />
+          </label>
+          {hasError ? (
+            <p className="rounded-md bg-[#ffe7df] px-3 py-2 text-sm font-semibold text-[#9b392f]">
+              Username atau password salah.
+            </p>
+          ) : null}
+          <button
+            className="h-11 rounded-md bg-[#172019] px-4 text-sm font-bold text-white"
+            type="submit"
+          >
+            Masuk
+          </button>
+        </form>
+      </section>
+    </main>
+  );
+}
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  if (!(await isAuthenticated())) {
+    const params = searchParams ? await searchParams : {};
+    return <LoginScreen hasError={params.login === "error"} />;
+  }
+
   const sheet = await getSheetData();
   const payments = sheet.payments;
   const totalAmount = payments.reduce(
@@ -535,6 +568,14 @@ export default async function Home() {
               </h2>
             </div>
             <div className="flex flex-wrap gap-2">
+              <form action="/api/logout" method="post">
+                <button
+                  className="inline-flex h-10 items-center rounded-md border border-[#cbd4c6] bg-white px-4 text-sm font-semibold"
+                  type="submit"
+                >
+                  Logout
+                </button>
+              </form>
               <a
                 className="inline-flex h-10 items-center rounded-md border border-[#cbd4c6] bg-white px-4 text-sm font-semibold"
                 href={`https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit?gid=${SHEET_GID}#gid=${SHEET_GID}`}
