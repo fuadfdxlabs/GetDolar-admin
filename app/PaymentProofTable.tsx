@@ -143,6 +143,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   const [queueIndex, setQueueIndex] = useState(0);
   const [showDefaultPreview, setShowDefaultPreview] = useState(false);
   const [sentIds, setSentIds] = useState<string[]>([]);
+  const [origin, setOrigin] = useState("");
 
   useEffect(() => {
     try {
@@ -151,6 +152,10 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
     } catch {
       setSentIds([]);
     }
+  }, []);
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
   }, []);
 
   const filteredPayments = useMemo(() => {
@@ -266,8 +271,12 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
     });
   };
 
-  const getPaymentProofUrl = (payment: PaymentProofRow) =>
-    `${window.location.origin}${createPaymentProofPath(payment)}`;
+  const getPaymentProofUrl = (payment: PaymentProofRow) => {
+    const currentOrigin =
+      origin || (typeof window === "undefined" ? "" : window.location.origin);
+
+    return `${currentOrigin}${createPaymentProofPath(payment)}`;
+  };
 
   const openWhatsapp = (payment: PaymentProofRow) => {
     if (!payment.phone) {
@@ -611,14 +620,8 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                     <div className="flex flex-wrap gap-2">
                       <a
                         className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md bg-[#25d366] px-3 text-xs font-bold text-[#062511]"
-                        href={createWhatsappUrl(
-                          payment,
-                          createPaymentProofPath(payment),
-                        )}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          openWhatsapp(payment);
-                        }}
+                        href={createWhatsappUrl(payment, getPaymentProofUrl(payment))}
+                        rel="noreferrer"
                         target="_blank"
                       >
                         Kirim WA
@@ -634,26 +637,28 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                       >
                         {sentIds.includes(payment.id) ? "Batalkan" : "Tandai"}
                       </button>
-                      <button
+                      <a
                         className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
-                        onClick={() => openPaymentProof(payment)}
-                        type="button"
+                        href={createPaymentProofPath(payment)}
+                        rel="noreferrer"
+                        target="_blank"
                       >
                         Buka PDF
-                      </button>
+                      </a>
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       <span className="inline-flex min-w-20 text-xs font-semibold leading-5 text-[#9b392f]">
                         No WA kosong
                       </span>
-                      <button
+                      <a
                         className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
-                        onClick={() => openPaymentProof(payment)}
-                        type="button"
+                        href={createPaymentProofPath(payment)}
+                        rel="noreferrer"
+                        target="_blank"
                       >
                         Buka PDF
-                      </button>
+                      </a>
                     </div>
                   )}
                 </td>
