@@ -418,7 +418,7 @@ const createWhatsappMessage = (payment: PaymentProofRow) =>
       : []),
     `Tanggal Pembayaran: ${formatPaymentDate()}`,
     "",
-    "Diproses oleh GET DOLAR TA-01",
+    "Diproses oleh GET DOLAR",
     "Terima kasih atas partisipasi Anda.",
     "Semoga sukses dan penghasilan terus meningkat.",
   ].join("\n");
