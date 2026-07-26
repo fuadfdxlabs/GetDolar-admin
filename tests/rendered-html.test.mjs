@@ -82,6 +82,7 @@ test("keeps member list paginated and searchable", async () => {
   assert.match(table, /Preview bukti/);
   assert.match(table, /Ada WA/);
   assert.match(table, /No WA kosong/);
+  assert.doesNotMatch(table, /filters\.map[\s\S]{0,180}md:hidden/);
   assert.match(table, /Pilih tampil/);
   assert.match(table, /Pilih hasil filter/);
   assert.match(table, /Preview pesan WA/);

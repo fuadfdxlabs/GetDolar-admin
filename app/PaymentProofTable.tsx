@@ -232,7 +232,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
             {filteredPayments.length} data
           </span>
         </div>
-        <div className="flex gap-2 overflow-x-auto md:hidden">
+        <div className="flex gap-2 overflow-x-auto">
           {filters.map((item) => (
             <button
               className={`h-9 shrink-0 rounded-md px-3 text-xs font-bold ${
