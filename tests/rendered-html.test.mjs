@@ -85,5 +85,11 @@ test("keeps member list paginated and searchable", async () => {
   assert.match(table, /Preview bukti/);
   assert.match(table, /Ada WA/);
   assert.match(table, /No WA kosong/);
+  assert.match(table, /Pilih tampil/);
+  assert.match(table, /Pilih hasil filter/);
+  assert.match(table, /Kirim dipilih/);
+  assert.match(table, /Antrean kirim/);
+  assert.match(table, /Kirim WhatsApp/);
+  assert.match(table, /Berikutnya/);
   assert.match(table, /<th className="px-5 py-3">No\.<\/th>/);
 });

@@ -101,6 +101,9 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   const [selectedPayment, setSelectedPayment] = useState<PaymentProofRow | null>(
     null,
   );
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [queue, setQueue] = useState<PaymentProofRow[]>([]);
+  const [queueIndex, setQueueIndex] = useState(0);
 
   const filteredPayments = useMemo(() => {
     const filteredByType = payments.filter((payment) => {
@@ -145,11 +148,50 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   const pageStart = (currentPage - 1) * PAGE_SIZE;
   const visiblePayments = filteredPayments.slice(pageStart, pageStart + PAGE_SIZE);
   const visibleMobilePayments = filteredPayments.slice(0, mobileVisibleCount);
+  const selectedPayments = payments.filter((payment) =>
+    selectedIds.includes(payment.id),
+  );
+  const queuePayment = queue[queueIndex];
 
   const updateQuery = (value: string) => {
     setQuery(value);
     setPage(1);
     setMobileVisibleCount(MOBILE_PAGE_SIZE);
+  };
+
+  const togglePayment = (payment: PaymentProofRow) => {
+    setSelectedIds((current) =>
+      current.includes(payment.id)
+        ? current.filter((id) => id !== payment.id)
+        : [...current, payment.id],
+    );
+  };
+
+  const selectPayments = (items: PaymentProofRow[]) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      items.filter((payment) => payment.phone).forEach((payment) => {
+        next.add(payment.id);
+      });
+      return Array.from(next);
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedIds([]);
+    setQueue([]);
+    setQueueIndex(0);
+  };
+
+  const startQueue = (items = selectedPayments) => {
+    const sendable = items.filter((payment) => payment.phone);
+
+    if (!sendable.length) {
+      return;
+    }
+
+    setQueue(sendable);
+    setQueueIndex(0);
   };
 
   const updateFilter = (value: FilterKey) => {
@@ -201,6 +243,44 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
             </button>
           ))}
         </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="h-10 rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
+            onClick={() =>
+              selectPayments(
+                window.innerWidth < 768 ? visibleMobilePayments : visiblePayments,
+              )
+            }
+            type="button"
+          >
+            Pilih tampil
+          </button>
+          <button
+            className="h-10 rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
+            onClick={() => selectPayments(filteredPayments)}
+            type="button"
+          >
+            Pilih hasil filter
+          </button>
+          {selectedIds.length ? (
+            <button
+              className="h-10 rounded-md bg-[#172019] px-3 text-xs font-bold text-white"
+              onClick={() => startQueue()}
+              type="button"
+            >
+              Kirim dipilih ({selectedPayments.filter((item) => item.phone).length})
+            </button>
+          ) : null}
+          {selectedIds.length ? (
+            <button
+              className="h-10 rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
+              onClick={clearSelection}
+              type="button"
+            >
+              Bersihkan
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="block md:hidden">
@@ -208,6 +288,15 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
           {visibleMobilePayments.map((payment, index) => (
             <article className="p-4" key={`${payment.id}-${index}`}>
               <div className="flex items-start justify-between gap-3">
+                <label className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[#cbd4c6]">
+                  <input
+                    aria-label={`Pilih ${payment.customer}`}
+                    checked={selectedIds.includes(payment.id)}
+                    className="h-4 w-4 accent-[#172019]"
+                    onChange={() => togglePayment(payment)}
+                    type="checkbox"
+                  />
+                </label>
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-[#607065]">
                     No. {index + 1}
@@ -300,6 +389,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
           <thead className="bg-[#f7f9f5] text-xs uppercase text-[#607065]">
             <tr>
               <th className="px-5 py-3">No.</th>
+              <th className="px-5 py-3">Pilih</th>
               {payments[0]?.cells.map((cell, index) => (
                 <th className="px-5 py-3" key={`${index}-${cell.label}`}>
                   {cell.label}
@@ -313,6 +403,15 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
               <tr key={`${payment.id}-${pageStart + index}`}>
                 <td className="px-5 py-4 font-semibold text-[#607065]">
                   {pageStart + index + 1}
+                </td>
+                <td className="px-5 py-4">
+                  <input
+                    aria-label={`Pilih ${payment.customer}`}
+                    checked={selectedIds.includes(payment.id)}
+                    className="h-4 w-4 accent-[#172019]"
+                    onChange={() => togglePayment(payment)}
+                    type="checkbox"
+                  />
                 </td>
                 {payment.cells.map((cell, cellIndex) => (
                   <td
@@ -411,6 +510,60 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
               </button>
             )}
           </section>
+        </div>
+      ) : null}
+
+      {queuePayment ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#d8ded2] bg-white p-4 shadow-2xl md:left-64">
+          <div className="mx-auto flex max-w-5xl flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase text-[#607065]">
+                Antrean kirim {queueIndex + 1} dari {queue.length}
+              </p>
+              <h3 className="mt-1 text-base font-semibold">
+                {queuePayment.customer}
+              </h3>
+              <p className="text-sm text-[#607065]">
+                {formatRupiah(queuePayment.amount)} · {queuePayment.phone}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 md:flex">
+              <button
+                className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+                onClick={() => setSelectedPayment(queuePayment)}
+                type="button"
+              >
+                Preview
+              </button>
+              <a
+                className="inline-flex h-11 items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
+                href={createWhatsappUrl(queuePayment)}
+                target="_blank"
+              >
+                Kirim WhatsApp
+              </a>
+              <button
+                className="h-11 rounded-md bg-[#172019] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#607065]"
+                disabled={queueIndex >= queue.length - 1}
+                onClick={() =>
+                  setQueueIndex((value) => Math.min(queue.length - 1, value + 1))
+                }
+                type="button"
+              >
+                Berikutnya
+              </button>
+              <button
+                className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
+                onClick={() => {
+                  setQueue([]);
+                  setQueueIndex(0);
+                }}
+                type="button"
+              >
+                Selesai
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
     </section>
