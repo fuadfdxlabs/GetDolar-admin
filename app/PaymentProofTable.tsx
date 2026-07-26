@@ -69,6 +69,13 @@ const formatDollar = (value: number) =>
 
 const hasValue = (value: string) => value.trim() !== "" && value.trim() !== "-";
 
+const formatPaymentDate = (date = new Date()) =>
+  new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+
 const createWhatsappMessage = (payment: PaymentProofRow) =>
   [
     "GET DOLAR TA-01",
@@ -85,22 +92,14 @@ const createWhatsappMessage = (payment: PaymentProofRow) =>
     `Total Rupiah: ${formatRupiah(payment.totalRupiah)}`,
     `Biaya Admin: ${formatRupiah(payment.adminFee)}`,
     `DITERIMA BERSIH: ${formatRupiah(payment.amount)}`,
-    ...(hasValue(payment.method) ||
-    hasValue(payment.destination) ||
-    hasValue(payment.paidAt)
-      ? [
-          "",
-          ...(hasValue(payment.method)
-            ? [`Metode Pembayaran: ${payment.method}`]
-            : []),
-          ...(hasValue(payment.destination)
-            ? [`Tujuan Pembayaran: ${payment.destination}`]
-            : []),
-          ...(hasValue(payment.paidAt)
-            ? [`Tanggal Pembayaran: ${payment.paidAt}`]
-            : []),
-        ]
+    "",
+    ...(hasValue(payment.method)
+      ? [`Metode Pembayaran: ${payment.method}`]
       : []),
+    ...(hasValue(payment.destination)
+      ? [`Tujuan Pembayaran: ${payment.destination}`]
+      : []),
+    `Tanggal Pembayaran: ${formatPaymentDate()}`,
     "",
     "Diproses oleh GET DOLAR TA-01",
     "Terima kasih atas partisipasi Anda.",
@@ -250,6 +249,14 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
     });
   };
 
+  const openWhatsapp = (payment: PaymentProofRow) => {
+    if (!payment.phone) {
+      return;
+    }
+
+    window.open(createWhatsappUrl(payment), "_blank", "noopener,noreferrer");
+  };
+
   const resetSentStatuses = () => {
     setSentIds([]);
     window.localStorage.removeItem(SENT_STORAGE_KEY);
@@ -376,13 +383,13 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 </h3>
               </div>
               {defaultPreviewPayment.phone ? (
-                <a
+                <button
                   className="inline-flex h-11 items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
-                  href={createWhatsappUrl(defaultPreviewPayment)}
-                  target="_blank"
+                  onClick={() => openWhatsapp(defaultPreviewPayment)}
+                  type="button"
                 >
                   Kirim bukti ke WhatsApp
-                </a>
+                </button>
               ) : (
                 <button
                   className="h-11 rounded-md bg-[#607065] px-4 text-sm font-bold text-white"
@@ -462,13 +469,13 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                   Lihat bukti
                 </button>
                 {payment.phone ? (
-                  <a
+                  <button
                     className="inline-flex h-11 items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
-                    href={createWhatsappUrl(payment)}
-                    target="_blank"
+                    onClick={() => openWhatsapp(payment)}
+                    type="button"
                   >
                     Kirim WA
-                  </a>
+                  </button>
                 ) : (
                   <button
                     className="h-11 rounded-md bg-[#607065] px-4 text-sm font-bold text-white"
@@ -560,6 +567,10 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                       <a
                         className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md bg-[#25d366] px-3 text-xs font-bold text-[#062511]"
                         href={createWhatsappUrl(payment)}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          openWhatsapp(payment);
+                        }}
                         target="_blank"
                       >
                         Kirim WA
@@ -640,13 +651,13 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
               </pre>
             </div>
             {selectedPayment.phone ? (
-              <a
+              <button
                 className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
-                href={createWhatsappUrl(selectedPayment)}
-                target="_blank"
+                onClick={() => openWhatsapp(selectedPayment)}
+                type="button"
               >
                 Kirim bukti ke WhatsApp
-              </a>
+              </button>
             ) : (
               <button
                 className="mt-4 h-12 w-full rounded-md bg-[#607065] px-4 text-sm font-bold text-white"
@@ -692,13 +703,13 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
               >
                 Preview
               </button>
-              <a
+              <button
                 className="inline-flex h-11 items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
-                href={createWhatsappUrl(queuePayment)}
-                target="_blank"
+                onClick={() => openWhatsapp(queuePayment)}
+                type="button"
               >
                 Kirim WhatsApp
-              </a>
+              </button>
               <button
                 className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
                 onClick={() => toggleSent(queuePayment)}

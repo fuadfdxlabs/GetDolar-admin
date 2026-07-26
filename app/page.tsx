@@ -119,18 +119,18 @@ const aliases = {
   ],
   memberId: ["member id", "member_id", "domain id", "domain_id"],
   method: [
+    "bank",
     "metode pembayaran",
     "metode_pembayaran",
     "metode",
-    "bank",
     "payment method",
   ],
   destination: [
-    "tujuan pembayaran",
-    "tujuan_pembayaran",
     "no rekening",
     "no_rekening",
     "rekening",
+    "tujuan pembayaran",
+    "tujuan_pembayaran",
     "produk",
     "paket",
     "item",
@@ -218,8 +218,11 @@ const pickValue = (
   aliasList: string[],
   fallback = "-",
 ) => {
-  const header = headers.find((item) => aliasList.includes(normalize(item)));
-  return header ? row[header] || fallback : fallback;
+  const candidates = aliasList
+    .map((alias) => headers.find((item) => normalize(item) === alias))
+    .filter((header): header is string => Boolean(header));
+  const header = candidates.find((item) => row[item]?.trim());
+  return header ? row[header] : fallback;
 };
 
 const parseCsv = (csv: string) => {
@@ -383,6 +386,13 @@ const formatDollar = (value: number) =>
 
 const hasValue = (value: string) => value.trim() !== "" && value.trim() !== "-";
 
+const formatPaymentDate = (date = new Date()) =>
+  new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+
 const createWhatsappMessage = (payment: PaymentProofRow) =>
   [
     "GET DOLAR TA-01",
@@ -399,22 +409,14 @@ const createWhatsappMessage = (payment: PaymentProofRow) =>
     `Total Rupiah: ${formatRupiah(payment.totalRupiah)}`,
     `Biaya Admin: ${formatRupiah(payment.adminFee)}`,
     `DITERIMA BERSIH: ${formatRupiah(payment.amount)}`,
-    ...(hasValue(payment.method) ||
-    hasValue(payment.destination) ||
-    hasValue(payment.paidAt)
-      ? [
-          "",
-          ...(hasValue(payment.method)
-            ? [`Metode Pembayaran: ${payment.method}`]
-            : []),
-          ...(hasValue(payment.destination)
-            ? [`Tujuan Pembayaran: ${payment.destination}`]
-            : []),
-          ...(hasValue(payment.paidAt)
-            ? [`Tanggal Pembayaran: ${payment.paidAt}`]
-            : []),
-        ]
+    "",
+    ...(hasValue(payment.method)
+      ? [`Metode Pembayaran: ${payment.method}`]
       : []),
+    ...(hasValue(payment.destination)
+      ? [`Tujuan Pembayaran: ${payment.destination}`]
+      : []),
+    `Tanggal Pembayaran: ${formatPaymentDate()}`,
     "",
     "Diproses oleh GET DOLAR TA-01",
     "Terima kasih atas partisipasi Anda.",
