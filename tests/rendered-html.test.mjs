@@ -34,13 +34,13 @@ test("server-renders the payment proof WhatsApp dashboard", async () => {
   assert.match(html, /Bukti Pembayaran WhatsApp/);
   assert.match(html, /Pend_Per_Member_Final/);
   assert.match(html, /Bukti_Pembayaran/);
-  assert.match(html, /Mapping Google Sheet/);
   assert.match(html, /Preview pesan WhatsApp/);
   assert.match(html, /Kirim bukti pembayaran ke WhatsApp/);
   assert.match(html, /1523444064/);
   assert.match(html, /INV-2026-0726-001/);
   assert.match(html, /https:\/\/wa\.me\/6281324616717\?text=/);
   assert.match(html, /Halo%20Asep%20Syaefullah/);
+  assert.doesNotMatch(html, /Mapping Google Sheet|Cara connect|Format bukti/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
 

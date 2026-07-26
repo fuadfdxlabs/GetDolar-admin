@@ -474,11 +474,7 @@ export default async function Home() {
                 ["Baris sheet", String(payments.length), SHEET_NAME],
                 ["Total dibayar", formatRupiah(totalAmount), "dari Hasil_Bersih_Rp"],
                 ["Nomor WA siap", `${whatsappReady}`, "bisa dikirim"],
-                [
-                  "Status sync",
-                  sheet.source === "google-sheet" ? "Live" : "Fallback",
-                  `gid ${SHEET_GID}`,
-                ],
+                ["Template", PROOF_TEMPLATE_SHEET, "bukti pembayaran"],
               ].map(([label, value, meta]) => (
                 <div
                   className="rounded-lg border border-[#d8ded2] bg-white p-4"
@@ -493,43 +489,6 @@ export default async function Home() {
                   </p>
                 </div>
               ))}
-            </section>
-
-            <section className="rounded-lg border border-[#d8ded2] bg-white p-5">
-              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold">Mapping Google Sheet</h3>
-                  <p className="text-sm text-[#607065]">
-                    Kolom dari {SHEET_NAME} dipakai untuk bikin bukti pembayaran.
-                  </p>
-                </div>
-                <span className="rounded-md bg-[#e6ff7a] px-3 py-1 text-xs font-bold text-[#172019]">
-                  {sheet.headers.length} kolom terbaca
-                </span>
-              </div>
-
-              <div className="mt-5 grid gap-3 md:grid-cols-3">
-                {[
-                  ["Nama", selectedPayment.customer],
-                  ["WhatsApp", selectedPayment.phone || "Belum ada nomor"],
-                  ["Diterima Bersih", formatRupiah(selectedPayment.amount)],
-                  ["No. Invoice", selectedPayment.id],
-                  ["ID Member", selectedPayment.memberId],
-                  ["Status", selectedPayment.status],
-                ].map(([label, value]) => (
-                  <div
-                    className="rounded-lg border border-[#e5eadf] bg-[#f9faf6] p-3"
-                    key={label}
-                  >
-                    <p className="text-xs font-semibold uppercase text-[#607065]">
-                      {label}
-                    </p>
-                    <p className="mt-1 break-words text-sm font-semibold">
-                      {value}
-                    </p>
-                  </div>
-                ))}
-              </div>
             </section>
 
             <section
@@ -615,42 +574,6 @@ export default async function Home() {
                   Nomor WA belum ada
                 </button>
               )}
-            </section>
-
-            <section className="rounded-lg border border-[#d8ded2] bg-white p-5">
-              <h3 className="text-lg font-semibold">Cara connect</h3>
-              <ol className="mt-4 space-y-4 text-sm">
-                {[
-                  `Data pembayaran diambil dari ${SHEET_NAME} via gid ${SHEET_GID}.`,
-                  `Format pesan mengikuti template ${PROOF_TEMPLATE_SHEET}.`,
-                  "Kolom nama, no_hp, Hasil_Bersih_Rp, revenue, referral, dan kurs dimapping otomatis.",
-                  "Tombol kirim membuat link WhatsApp berisi bukti pembayaran.",
-                ].map((step, index) => (
-                  <li className="flex gap-3" key={step}>
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[#e6ff7a] text-xs font-bold">
-                      {index + 1}
-                    </span>
-                    <span className="leading-6 text-[#3e4d43]">{step}</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-
-            <section className="rounded-lg border border-[#d8ded2] bg-white p-5">
-              <h3 className="text-lg font-semibold">Format bukti</h3>
-              <div className="mt-4 space-y-3 text-sm text-[#3e4d43]">
-                <p>
-                  Pesan berisi ringkasan Revenue, Referral, Total Dollar, Kurs,
-                  Total Rupiah, Biaya Admin, dan Diterima Bersih.
-                </p>
-                <p>
-                  Ini bukan tagihan pembayaran, tapi konfirmasi bahwa GetDolar
-                  sudah memproses pembayaran ke member.
-                </p>
-                <p>
-                  Template referensi: {PROOF_TEMPLATE_SHEET}.
-                </p>
-              </div>
             </section>
           </aside>
         </div>
