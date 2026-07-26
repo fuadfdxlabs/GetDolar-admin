@@ -93,14 +93,13 @@ test("keeps member list paginated and searchable", async () => {
   assert.match(table, /Kirim dipilih/);
   assert.match(table, /Antrean kirim/);
   assert.match(table, /Kirim WhatsApp/);
-  assert.match(table, /Copy pesan/);
   assert.match(table, /Tandai terkirim/);
   assert.match(table, /Batalkan terkirim/);
   assert.match(table, /Reset status terkirim/);
   assert.match(table, /removeItem\(SENT_STORAGE_KEY\)/);
   assert.match(table, /SENT_STORAGE_KEY/);
   assert.match(table, /localStorage/);
-  assert.match(table, /navigator\.clipboard\.writeText/);
+  assert.doesNotMatch(table, /Copy pesan|navigator\.clipboard|execCommand|copiedId|copyMessage/);
   assert.match(table, /Berikutnya/);
   assert.match(table, /<th className="w-14 px-5 py-3">No\.<\/th>/);
   assert.match(table, /<th className="w-64 px-5 py-3">Aksi<\/th>/);

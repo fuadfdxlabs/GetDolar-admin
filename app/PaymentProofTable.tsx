@@ -113,7 +113,6 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   const [queueIndex, setQueueIndex] = useState(0);
   const [showDefaultPreview, setShowDefaultPreview] = useState(false);
   const [sentIds, setSentIds] = useState<string[]>([]);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -240,27 +239,6 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   const resetSentStatuses = () => {
     setSentIds([]);
     window.localStorage.removeItem(SENT_STORAGE_KEY);
-  };
-
-  const copyMessage = async (payment: PaymentProofRow) => {
-    const message = createWhatsappMessage(payment);
-
-    try {
-      await navigator.clipboard.writeText(message);
-    } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = message;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-    }
-
-    setCopiedId(payment.id);
-    window.setTimeout(() => setCopiedId(null), 1800);
   };
 
   const sentCount = payments.filter((payment) => sentIds.includes(payment.id)).length;
@@ -469,13 +447,6 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 >
                   Lihat bukti
                 </button>
-                <button
-                  className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
-                  onClick={() => copyMessage(payment)}
-                  type="button"
-                >
-                  {copiedId === payment.id ? "Tersalin" : "Copy pesan"}
-                </button>
                 {payment.phone ? (
                   <a
                     className="inline-flex h-11 items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
@@ -580,13 +551,6 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                         Kirim WA
                       </a>
                       <button
-                        className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
-                        onClick={() => copyMessage(payment)}
-                        type="button"
-                      >
-                        {copiedId === payment.id ? "Tersalin" : "Copy"}
-                      </button>
-                      <button
                         className={`inline-flex h-9 items-center justify-center whitespace-nowrap rounded-md px-3 text-xs font-bold ${
                           sentIds.includes(payment.id)
                             ? "bg-[#172019] text-white"
@@ -661,13 +625,6 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 {createWhatsappMessage(selectedPayment)}
               </pre>
             </div>
-            <button
-              className="mt-4 h-12 w-full rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
-              onClick={() => copyMessage(selectedPayment)}
-              type="button"
-            >
-              {copiedId === selectedPayment.id ? "Pesan tersalin" : "Copy pesan"}
-            </button>
             {selectedPayment.phone ? (
               <a
                 className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-md bg-[#25d366] px-4 text-sm font-bold text-[#062511]"
@@ -728,13 +685,6 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
               >
                 Kirim WhatsApp
               </a>
-              <button
-                className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
-                onClick={() => copyMessage(queuePayment)}
-                type="button"
-              >
-                {copiedId === queuePayment.id ? "Tersalin" : "Copy pesan"}
-              </button>
               <button
                 className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold"
                 onClick={() => toggleSent(queuePayment)}
