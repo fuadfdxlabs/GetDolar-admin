@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+
 const SHEET_ID = "1igG8M1bQEo6QaE9_y-OyPMLoNs4y6skeO6oKkuorPMo";
 const SHEET_GID = "1523444064";
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
@@ -325,8 +328,24 @@ const wrapPdfLine = (value: string, limit = 78) => {
   return lines.length ? lines : [""];
 };
 
-const createPaymentProofPdf = (payment: PaymentProofRow) => {
+const encodeAscii = (value: string) => new TextEncoder().encode(value);
+
+const concatBytes = (chunks: Uint8Array[]) => {
+  const totalLength = chunks.reduce((total, chunk) => total + chunk.length, 0);
+  const output = new Uint8Array(totalLength);
+  let offset = 0;
+
+  chunks.forEach((chunk) => {
+    output.set(chunk, offset);
+    offset += chunk.length;
+  });
+
+  return output;
+};
+
+const createPaymentProofPdf = async (payment: PaymentProofRow) => {
   const paymentDate = formatPaymentDate();
+  const logo = await readFile(join(process.cwd(), "public", "getdolar-logo-pdf.jpg"));
   const details = [
     ["ID Member", displayText(payment.memberId)],
     ["No. Invoice", payment.id],
@@ -387,9 +406,13 @@ const createPaymentProofPdf = (payment: PaymentProofRow) => {
   rect(0, 732, 595, 110);
   fill(0.9, 1, 0.48);
   rect(0, 732, 595, 7);
+  content.push("q");
+  content.push("72 0 0 72 46 752 cm");
+  content.push("/Logo Do");
+  content.push("Q");
   fill(1, 1, 1);
-  text("GET DOLAR", 46, 792, 26, "F2");
-  text("BUKTI PEMBAYARAN", 46, 768, 13, "F2");
+  text("GET DOLAR", 132, 792, 26, "F2");
+  text("BUKTI PEMBAYARAN", 132, 768, 13, "F2");
   fill(0.15, 0.83, 0.4);
   rect(432, 784, 108, 26);
   fill(0.04, 0.15, 0.07);
@@ -444,33 +467,51 @@ const createPaymentProofPdf = (payment: PaymentProofRow) => {
   text("Semoga sukses dan penghasilan terus meningkat.", 52, 52, 10);
 
   const stream = content.join("\n");
-  const objects = [
-    "<< /Type /Catalog /Pages 2 0 R >>",
-    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>",
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
-    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+  const objects: Uint8Array[] = [
+    encodeAscii("<< /Type /Catalog /Pages 2 0 R >>"),
+    encodeAscii("<< /Type /Pages /Kids [3 0 R] /Count 1 >>"),
+    encodeAscii(
+      "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> /XObject << /Logo 6 0 R >> >> /Contents 7 0 R >>",
+    ),
+    encodeAscii("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"),
+    encodeAscii("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>"),
+    concatBytes([
+      encodeAscii(
+        `<< /Type /XObject /Subtype /Image /Width 220 /Height 220 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logo.length} >>\nstream\n`,
+      ),
+      logo,
+      encodeAscii("\nendstream"),
+    ]),
+    encodeAscii(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`),
   ];
-  const parts = ["%PDF-1.4\n"];
+  const parts: Uint8Array[] = [encodeAscii("%PDF-1.4\n")];
   const offsets = [0];
+  let byteLength = parts[0].length;
 
   objects.forEach((object, index) => {
-    offsets.push(parts.join("").length);
-    parts.push(`${index + 1} 0 obj\n${object}\nendobj\n`);
+    offsets.push(byteLength);
+    const chunk = concatBytes([
+      encodeAscii(`${index + 1} 0 obj\n`),
+      object,
+      encodeAscii("\nendobj\n"),
+    ]);
+    parts.push(chunk);
+    byteLength += chunk.length;
   });
 
-  const xrefOffset = parts.join("").length;
-  parts.push(`xref\n0 ${objects.length + 1}\n`);
-  parts.push("0000000000 65535 f \n");
+  const xrefOffset = byteLength;
+  parts.push(encodeAscii(`xref\n0 ${objects.length + 1}\n`));
+  parts.push(encodeAscii("0000000000 65535 f \n"));
   offsets.slice(1).forEach((offset) => {
-    parts.push(`${String(offset).padStart(10, "0")} 00000 n \n`);
+    parts.push(encodeAscii(`${String(offset).padStart(10, "0")} 00000 n \n`));
   });
   parts.push(
-    `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`,
+    encodeAscii(
+      `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`,
+    ),
   );
 
-  return parts.join("");
+  return concatBytes(parts);
 };
 
 const safeFilename = (value: string) =>
@@ -491,7 +532,7 @@ export async function GET(request: Request) {
     return new Response("Bukti pembayaran tidak ditemukan.", { status: 404 });
   }
 
-  return new Response(createPaymentProofPdf(payment), {
+  return new Response(await createPaymentProofPdf(payment), {
     headers: {
       "content-disposition": `inline; filename="bukti-pembayaran-${safeFilename(payment.id)}.pdf"`,
       "content-type": "application/pdf",

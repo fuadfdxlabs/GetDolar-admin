@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 
 test("keeps admin login gate wired", async () => {
@@ -30,6 +30,8 @@ test("keeps payment proof PDF route public and linked", async () => {
   assert.match(route, /content-type": "application\/pdf"/);
   assert.match(route, /content-disposition/);
   assert.match(route, /"%PDF-1\.4\\n"/);
+  assert.match(route, /getdolar-logo-pdf\.jpg/);
+  assert.match(route, /\/Logo Do/);
   assert.doesNotMatch(route, /ADMIN_SESSION_COOKIE|Login Admin/);
   assert.match(table, /createPaymentProofPath/);
   assert.match(table, /\/api\/payment-proof\?invoice=/);
@@ -81,4 +83,10 @@ test("uses Vercel-compatible Next build scripts", async () => {
   assert.match(packageJson, /"start": "next start"/);
   assert.doesNotMatch(packageJson, /"build": "vinext build"/);
   assert.doesNotMatch(layout, /next\/font\/google/);
+  assert.match(layout, /\/getdolar-logo\.png/);
+  assert.match(layout, /\/og\.png/);
+  assert.match(layout, /openGraph/);
+  await access(new URL("../public/getdolar-logo.png", import.meta.url));
+  await access(new URL("../public/getdolar-logo-pdf.jpg", import.meta.url));
+  await access(new URL("../public/og.png", import.meta.url));
 });
