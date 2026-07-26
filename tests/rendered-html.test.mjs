@@ -32,9 +32,11 @@ test("server-renders the invoice WhatsApp dashboard", async () => {
   assert.match(html, /<html lang="id">/i);
   assert.match(html, /<title>GetDolar Admin Dashboard<\/title>/i);
   assert.match(html, /Invoice WhatsApp/);
-  assert.match(html, /Buat invoice baru/);
+  assert.match(html, /Pend_Per_Member_Final/);
+  assert.match(html, /Mapping Google Sheet/);
   assert.match(html, /Preview pesan WhatsApp/);
   assert.match(html, /Kirim invoice ke WhatsApp/);
+  assert.match(html, /1523444064/);
   assert.match(html, /INV-2026-0726-001/);
   assert.match(html, /https:\/\/wa\.me\/6281288809911\?text=/);
   assert.match(html, /Halo%20Raka%20Pratama/);
@@ -48,7 +50,11 @@ test("keeps starter preview removed from product source", async () => {
     readFile(new URL("../package.json", import.meta.url), "utf8"),
   ]);
 
-  assert.match(page, /const invoices = \[/);
+  assert.match(page, /SHEET_NAME = "Pend_Per_Member_Final"/);
+  assert.match(page, /SHEET_GID = "1523444064"/);
+  assert.match(page, /SHEET_CSV_URL/);
+  assert.match(page, /rowsToObjects/);
+  assert.match(page, /mapRowsToInvoices/);
   assert.match(page, /encodeURIComponent/);
   assert.match(page, /wa\.me/);
   assert.match(layout, /title:\s*"GetDolar Admin"/);
