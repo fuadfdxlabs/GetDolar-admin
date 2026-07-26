@@ -395,7 +395,7 @@ const formatPaymentDate = (date = new Date()) =>
 
 const createWhatsappMessage = (payment: PaymentProofRow) =>
   [
-    "GET DOLAR TA-01",
+    "GET DOLAR",
     "BUKTI PEMBAYARAN",
     "",
     `Halo ${payment.customer}, pembayaran periode ${payment.period} sudah kami proses.`,
