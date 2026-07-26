@@ -63,6 +63,7 @@ test("keeps starter preview removed from product source", async () => {
   assert.match(page, /BUKTI PEMBAYARAN/);
   assert.match(page, /encodeURIComponent/);
   assert.match(page, /wa\.me/);
+  assert.doesNotMatch(page, /payments\.slice\(0,\s*12\)/);
   assert.match(layout, /title:\s*"GetDolar Admin"/);
   assert.doesNotMatch(page, /SkeletonPreview|_sites-preview|codex-preview/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);

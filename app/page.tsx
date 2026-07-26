@@ -542,11 +542,11 @@ export default async function Home() {
                 <div>
                   <h3 className="text-lg font-semibold">{SHEET_DISPLAY_NAME}</h3>
                   <p className="text-sm text-[#607065]">
-                    Menampilkan data pembayaran yang jadi sumber bukti.
+                    Menampilkan semua data pembayaran yang jadi sumber bukti.
                   </p>
                 </div>
                 <span className="rounded-md border border-[#cbd4c6] px-3 py-2 text-sm font-semibold">
-                  {payments.length} baris
+                  Semua {payments.length} baris
                 </span>
               </div>
               <div className="overflow-x-auto">
@@ -565,7 +565,7 @@ export default async function Home() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#edf0e9]">
-                    {payments.slice(0, 12).map((payment, index) => (
+                    {payments.map((payment, index) => (
                       <tr key={`${payment.id}-${index}`}>
                         {tableHeaders.map((header, headerIndex) => (
                           <td
