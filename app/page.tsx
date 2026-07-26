@@ -381,6 +381,8 @@ const formatDollar = (value: number) =>
     maximumFractionDigits: 2,
   }).format(value);
 
+const hasValue = (value: string) => value.trim() !== "" && value.trim() !== "-";
+
 const createWhatsappMessage = (payment: PaymentProofRow) =>
   [
     "GET DOLAR TA-01",
@@ -397,10 +399,22 @@ const createWhatsappMessage = (payment: PaymentProofRow) =>
     `Total Rupiah: ${formatRupiah(payment.totalRupiah)}`,
     `Biaya Admin: ${formatRupiah(payment.adminFee)}`,
     `DITERIMA BERSIH: ${formatRupiah(payment.amount)}`,
-    "",
-    `Metode Pembayaran: ${payment.method}`,
-    `Tujuan Pembayaran: ${payment.destination}`,
-    `Tanggal Pembayaran: ${payment.paidAt}`,
+    ...(hasValue(payment.method) ||
+    hasValue(payment.destination) ||
+    hasValue(payment.paidAt)
+      ? [
+          "",
+          ...(hasValue(payment.method)
+            ? [`Metode Pembayaran: ${payment.method}`]
+            : []),
+          ...(hasValue(payment.destination)
+            ? [`Tujuan Pembayaran: ${payment.destination}`]
+            : []),
+          ...(hasValue(payment.paidAt)
+            ? [`Tanggal Pembayaran: ${payment.paidAt}`]
+            : []),
+        ]
+      : []),
     "",
     "Diproses oleh GET DOLAR TA-01",
     "Terima kasih atas partisipasi Anda.",

@@ -99,6 +99,9 @@ test("keeps member list paginated and searchable", async () => {
   assert.match(table, /removeItem\(SENT_STORAGE_KEY\)/);
   assert.match(table, /SENT_STORAGE_KEY/);
   assert.match(table, /localStorage/);
+  assert.match(table, /hasValue\(payment\.method\)/);
+  assert.match(table, /hasValue\(payment\.destination\)/);
+  assert.match(table, /hasValue\(payment\.paidAt\)/);
   assert.doesNotMatch(table, /Copy pesan|navigator\.clipboard|execCommand|copiedId|copyMessage/);
   assert.match(table, /Berikutnya/);
   assert.match(table, /<th className="w-14 px-5 py-3">No\.<\/th>/);
