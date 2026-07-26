@@ -91,5 +91,7 @@ test("keeps member list paginated and searchable", async () => {
   assert.match(table, /Antrean kirim/);
   assert.match(table, /Kirim WhatsApp/);
   assert.match(table, /Berikutnya/);
-  assert.match(table, /<th className="px-5 py-3">No\.<\/th>/);
+  assert.match(table, /<th className="w-14 px-5 py-3">No\.<\/th>/);
+  assert.match(table, /<th className="w-32 px-5 py-3">Aksi<\/th>/);
+  assert.match(table, /whitespace-nowrap rounded-md bg-\[#25d366\]/);
 });

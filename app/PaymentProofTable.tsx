@@ -385,17 +385,20 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
       </div>
 
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[920px] text-left text-sm">
+        <table className="w-full min-w-[1080px] table-fixed text-left text-sm">
           <thead className="bg-[#f7f9f5] text-xs uppercase text-[#607065]">
             <tr>
-              <th className="px-5 py-3">No.</th>
-              <th className="px-5 py-3">Pilih</th>
+              <th className="w-14 px-5 py-3">No.</th>
+              <th className="w-20 px-5 py-3">Pilih</th>
               {payments[0]?.cells.map((cell, index) => (
-                <th className="px-5 py-3" key={`${index}-${cell.label}`}>
+                <th
+                  className="px-5 py-3"
+                  key={`${index}-${cell.label}`}
+                >
                   {cell.label}
                 </th>
               ))}
-              <th className="px-5 py-3">Aksi</th>
+              <th className="w-32 px-5 py-3">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#edf0e9]">
@@ -415,7 +418,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 </td>
                 {payment.cells.map((cell, cellIndex) => (
                   <td
-                    className="max-w-52 px-5 py-4"
+                    className="px-5 py-4"
                     key={`${cellIndex}-${cell.label}`}
                   >
                     <span className="line-clamp-2">{cell.value}</span>
@@ -424,14 +427,14 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 <td className="px-5 py-4">
                   {payment.phone ? (
                     <a
-                      className="rounded-md bg-[#25d366] px-3 py-2 text-xs font-bold text-[#062511]"
+                      className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md bg-[#25d366] px-3 text-xs font-bold text-[#062511]"
                       href={createWhatsappUrl(payment)}
                       target="_blank"
                     >
                       Kirim WA
                     </a>
                   ) : (
-                    <span className="text-xs font-semibold text-[#9b392f]">
+                    <span className="inline-flex min-w-20 text-xs font-semibold leading-5 text-[#9b392f]">
                       No WA kosong
                     </span>
                   )}
