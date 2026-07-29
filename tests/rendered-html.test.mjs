@@ -78,8 +78,11 @@ test("keeps member list tools intact", async () => {
   assert.match(table, /Batalkan terkirim/);
   assert.match(table, /Reset status terkirim/);
   assert.match(table, /createSentKey/);
+  assert.match(table, /isSharedSentStatus/);
   assert.match(table, /localStorage/);
   assert.match(page, /displayMemberName/);
+  assert.match(page, /Status_Kirim/);
+  assert.match(page, /Tanggal_Kirim/);
   assert.match(page, /<DashboardShell/);
   assert.match(shell, /Tutup sidebar/);
   assert.match(shell, /Buka sidebar/);

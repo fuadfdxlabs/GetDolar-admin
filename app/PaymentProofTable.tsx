@@ -17,6 +17,8 @@ type PaymentProofRow = {
   adminFee: number;
   amount: number;
   status: string;
+  sendStatus: string;
+  sentAt: string;
   period: string;
   paidAt: string;
   cells: Array<{
@@ -96,6 +98,11 @@ const formatDollar = (value: number) =>
   }).format(value);
 
 const hasValue = (value: string) => value.trim() !== "" && value.trim() !== "-";
+
+const isSharedSentStatus = (value: string) => {
+  const normalized = value.trim().toLowerCase();
+  return ["terkirim", "sudah dikirim", "dikirim", "sent"].includes(normalized);
+};
 
 const formatPaymentDate = (date = new Date()) =>
   new Intl.DateTimeFormat("id-ID", {
@@ -188,7 +195,9 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   }, []);
 
   const isSent = (payment: PaymentProofRow) =>
-    sentIds.includes(payment.id) || sentIds.includes(createSentKey(payment));
+    isSharedSentStatus(payment.sendStatus) ||
+    sentIds.includes(payment.id) ||
+    sentIds.includes(createSentKey(payment));
 
   useEffect(() => {
     setOrigin(window.location.origin);

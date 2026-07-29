@@ -38,6 +38,8 @@ type PaymentProofRow = {
   adminFee: number;
   amount: number;
   status: string;
+  sendStatus: string;
+  sentAt: string;
   period: string;
   paidAt: string;
   raw: SheetRow;
@@ -166,6 +168,8 @@ const aliases = {
   totalRupiah: ["total rp", "total_rp", "total rupiah"],
   adminFee: ["biaya rp", "biaya_rp", "biaya admin", "biaya_admin"],
   status: ["status", "keterangan", "payment status"],
+  sendStatus: ["status kirim", "status_kirim", "send status", "sent status"],
+  sentAt: ["tanggal kirim", "tanggal_kirim", "sent at", "sent_at"],
   period: ["periode", "period"],
   paidAt: [
     "tanggal bayar",
@@ -196,6 +200,8 @@ const headerLabels: Record<string, string> = {
   Tanggal_Bayar: "Tanggal Bayar",
   No_Invoice: "No. Invoice",
   Status: "Status",
+  Status_Kirim: "Status Kirim",
+  Tanggal_Kirim: "Tanggal Kirim",
   nama: "Nama",
   no_hp: "No. HP",
   no_rekening: "No. Rekening",
@@ -345,6 +351,8 @@ const mapRowsToPayments = (rows: SheetRow[], headers: string[]) =>
       adminFee: parseAmount(pickValue(row, headers, aliases.adminFee, "0")),
       amount,
       status: pickValue(row, headers, aliases.status, "Siap Kirim"),
+      sendStatus: pickValue(row, headers, aliases.sendStatus, "-"),
+      sentAt: pickValue(row, headers, aliases.sentAt, "-"),
       period: pickValue(row, headers, aliases.period, "-"),
       paidAt: pickValue(row, headers, aliases.paidAt, "-"),
       raw: row,
@@ -422,6 +430,8 @@ const createSearchText = (payment: PaymentProofRow) =>
     payment.method,
     payment.destination,
     payment.status,
+    payment.sendStatus,
+    payment.sentAt,
     payment.period,
     payment.paidAt,
     ...Object.values(payment.raw),
@@ -448,6 +458,8 @@ const createTablePayments = (
     adminFee: payment.adminFee,
     amount: payment.amount,
     status: payment.status,
+    sendStatus: payment.sendStatus,
+    sentAt: payment.sentAt,
     period: payment.period,
     paidAt: payment.paidAt,
     cells: tableHeaders.map((header) => ({
