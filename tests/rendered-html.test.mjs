@@ -62,6 +62,8 @@ test("keeps member list tools intact", async () => {
   assert.match(table, /const PAGE_SIZE = 15/);
   assert.match(table, /placeholder="Cari nama, ID member, WA\.\.\."/);
   assert.match(table, /Salin Norek/);
+  assert.match(table, /Rekening/);
+  assert.match(table, /formatAccountInfo/);
   assert.match(table, /navigator\.clipboard/);
   assert.match(table, /displayMemberName/);
   assert.match(table, /Ada WA/);

@@ -55,6 +55,17 @@ const filters: Array<{
 
 const displayText = (value: string) => value.replace(/_/g, " ");
 
+const formatAccountInfo = (payment: PaymentProofRow) => {
+  const method = hasValue(payment.method) ? payment.method : "";
+  const destination = hasValue(payment.destination) ? payment.destination : "";
+
+  if (method && destination) {
+    return `${method} - ${destination}`;
+  }
+
+  return method || destination || "-";
+};
+
 const displayMemberName = (value: string) => {
   const cleanValue = displayText(value);
   const parts = cleanValue
@@ -550,6 +561,14 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                   </p>
                   <p className="mt-1 text-sm font-semibold">{payment.period}</p>
                 </div>
+                <div className="col-span-2 rounded-md bg-[#f7f9f5] p-3">
+                  <p className="text-xs font-semibold text-[#607065]">
+                    Rekening
+                  </p>
+                  <p className="mt-1 break-words text-sm font-semibold">
+                    {formatAccountInfo(payment)}
+                  </p>
+                </div>
               </div>
 
               <div className="mt-4 flex flex-col gap-2">
@@ -670,7 +689,16 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 ))}
                 <td className="px-5 py-4">
                   {payment.phone ? (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-col gap-2">
+                      <div>
+                        <p className="text-[11px] font-bold uppercase text-[#607065]">
+                          Rekening
+                        </p>
+                        <p className="mt-0.5 break-words text-xs font-semibold leading-5">
+                          {formatAccountInfo(payment)}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
                       <a
                         className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md bg-[#25d366] px-3 text-xs font-bold text-[#062511]"
                         href={createWhatsappUrl(payment, getPaymentProofUrl(payment))}
@@ -706,9 +734,19 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                       >
                         Buka PDF
                       </a>
+                      </div>
                     </div>
                   ) : (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-col gap-2">
+                      <div>
+                        <p className="text-[11px] font-bold uppercase text-[#607065]">
+                          Rekening
+                        </p>
+                        <p className="mt-0.5 break-words text-xs font-semibold leading-5">
+                          {formatAccountInfo(payment)}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
                       <span className="inline-flex min-w-20 text-xs font-semibold leading-5 text-[#9b392f]">
                         No WA kosong
                       </span>
@@ -728,6 +766,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                       >
                         {copiedId === payment.id ? "Tersalin" : "Salin Norek"}
                       </button>
+                      </div>
                     </div>
                   )}
                 </td>
