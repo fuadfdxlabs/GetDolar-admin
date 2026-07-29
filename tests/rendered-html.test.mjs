@@ -69,6 +69,7 @@ test("keeps member list tools intact", async () => {
   assert.match(table, /Ada WA/);
   assert.match(table, /No WA kosong/);
   assert.match(table, /Belum dikirim/);
+  assert.match(table, /Sudah dikirim/);
   assert.match(table, /Pilih tampil/);
   assert.match(table, /Pilih hasil filter/);
   assert.match(table, /Kirim dipilih/);

@@ -35,7 +35,8 @@ type FilterKey =
   | "has-phone"
   | "no-phone"
   | "has-amount"
-  | "not-sent";
+  | "not-sent"
+  | "sent";
 
 const PAGE_SIZE = 15;
 const MOBILE_PAGE_SIZE = 15;
@@ -51,6 +52,7 @@ const filters: Array<{
   { key: "no-phone", label: "No WA kosong" },
   { key: "has-amount", label: "Ada nominal" },
   { key: "not-sent", label: "Belum dikirim" },
+  { key: "sent", label: "Sudah dikirim" },
 ];
 
 const displayText = (value: string) => value.replace(/_/g, " ");
@@ -189,6 +191,10 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
     const filteredByType = payments.filter((payment) => {
       if (filter === "not-sent") {
         return !sentIds.includes(payment.id);
+      }
+
+      if (filter === "sent") {
+        return sentIds.includes(payment.id);
       }
 
       if (filter === "has-phone") {
