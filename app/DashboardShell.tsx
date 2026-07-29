@@ -26,13 +26,7 @@ export function DashboardShell({
   ];
 
   return (
-    <main
-      className={`min-h-screen bg-[#f5f7f4] text-[#172019] lg:grid lg:transition-[grid-template-columns] lg:duration-200 ${
-        sidebarVisible
-          ? "lg:grid-cols-[16rem_minmax(0,1fr)]"
-          : "lg:grid-cols-[0_minmax(0,1fr)]"
-      }`}
-    >
+    <main className="min-h-screen bg-[#f5f7f4] text-[#172019] lg:flex">
       <button
         aria-label={sidebarVisible ? "Sembunyikan sidebar" : "Tampilkan sidebar"}
         className={`fixed bottom-4 z-50 hidden h-10 items-center rounded-md border border-[#cbd4c6] bg-white px-3 text-sm font-bold shadow-sm lg:inline-flex ${
@@ -45,8 +39,10 @@ export function DashboardShell({
       </button>
 
       <aside
-        className={`hidden h-screen overflow-hidden border-r border-[#d8ded2] bg-[#172019] text-white lg:sticky lg:top-0 lg:block ${
-          sidebarVisible ? "border-[#d8ded2]" : "border-transparent"
+        className={`hidden h-screen shrink-0 overflow-hidden border-r bg-[#172019] text-white transition-[width,border-color] duration-200 lg:sticky lg:top-0 lg:block ${
+          sidebarVisible
+            ? "w-64 border-[#d8ded2]"
+            : "w-0 border-transparent"
         }`}
       >
         <div
@@ -89,7 +85,7 @@ export function DashboardShell({
         </div>
       </aside>
 
-      <section className="min-w-0">{children}</section>
+      <section className="min-w-0 flex-1">{children}</section>
     </main>
   );
 }

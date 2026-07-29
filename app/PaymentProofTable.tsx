@@ -158,6 +158,9 @@ const createWhatsappUrl = (payment: PaymentProofRow, proofUrl: string) =>
 const createPaymentProofPath = (payment: PaymentProofRow) =>
   `/api/payment-proof?invoice=${encodeURIComponent(payment.id)}`;
 
+const createSentKey = (payment: PaymentProofRow) =>
+  [payment.id, payment.memberId, payment.period].join("|");
+
 export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -177,11 +180,15 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(SENT_STORAGE_KEY);
-      setSentIds(stored ? JSON.parse(stored) : []);
+      const parsed = stored ? JSON.parse(stored) : [];
+      setSentIds(Array.isArray(parsed) ? parsed : []);
     } catch {
       setSentIds([]);
     }
   }, []);
+
+  const isSent = (payment: PaymentProofRow) =>
+    sentIds.includes(payment.id) || sentIds.includes(createSentKey(payment));
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -190,11 +197,11 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   const filteredPayments = useMemo(() => {
     const filteredByType = payments.filter((payment) => {
       if (filter === "not-sent") {
-        return !sentIds.includes(payment.id);
+        return !isSent(payment);
       }
 
       if (filter === "sent") {
-        return sentIds.includes(payment.id);
+        return isSent(payment);
       }
 
       if (filter === "has-phone") {
@@ -296,9 +303,12 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
 
   const toggleSent = (payment: PaymentProofRow) => {
     setSentIds((current) => {
-      const next = current.includes(payment.id)
-        ? current.filter((id) => id !== payment.id)
-        : [...current, payment.id];
+      const sentKey = createSentKey(payment);
+      const currentlySent =
+        current.includes(payment.id) || current.includes(sentKey);
+      const next = currentlySent
+        ? current.filter((id) => id !== payment.id && id !== sentKey)
+        : Array.from(new Set([...current, sentKey]));
       window.localStorage.setItem(SENT_STORAGE_KEY, JSON.stringify(next));
       return next;
     });
@@ -361,7 +371,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
     window.localStorage.removeItem(SENT_STORAGE_KEY);
   };
 
-  const sentCount = payments.filter((payment) => sentIds.includes(payment.id)).length;
+  const sentCount = payments.filter((payment) => isSent(payment)).length;
 
   return (
     <section
@@ -539,14 +549,14 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 </div>
                 <span
                   className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-bold ${
-                    sentIds.includes(payment.id)
+                    isSent(payment)
                       ? "bg-[#172019] text-white"
                       : payment.phone
                       ? "bg-[#d9fbe6] text-[#0d5f2b]"
                       : "bg-[#ffe7df] text-[#9b392f]"
                   }`}
                 >
-                  {sentIds.includes(payment.id)
+                  {isSent(payment)
                     ? "Terkirim"
                     : payment.phone
                       ? "Ada WA"
@@ -622,7 +632,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                     onClick={() => toggleSent(payment)}
                     type="button"
                   >
-                    {sentIds.includes(payment.id)
+                    {isSent(payment)
                       ? "Batalkan terkirim"
                       : "Tandai terkirim"}
                   </button>
@@ -715,14 +725,14 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                         </a>
                         <button
                           className={`inline-flex h-9 items-center justify-center whitespace-nowrap rounded-md px-3 text-xs font-bold ${
-                            sentIds.includes(payment.id)
+                            isSent(payment)
                               ? "bg-[#172019] text-white"
                               : "border border-[#cbd4c6]"
                           }`}
                           onClick={() => toggleSent(payment)}
                           type="button"
                         >
-                          {sentIds.includes(payment.id) ? "Batalkan" : "Tandai"}
+                          {isSent(payment) ? "Batalkan" : "Tandai"}
                         </button>
                         <button
                           className="inline-flex h-9 min-w-24 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-45"
@@ -865,7 +875,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 onClick={() => toggleSent(selectedPayment)}
                 type="button"
               >
-                {sentIds.includes(selectedPayment.id)
+                {isSent(selectedPayment)
                   ? "Batalkan terkirim"
                   : "Tandai terkirim"}
               </button>
@@ -915,7 +925,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 onClick={() => toggleSent(queuePayment)}
                 type="button"
               >
-                {sentIds.includes(queuePayment.id)
+                {isSent(queuePayment)
                   ? "Batalkan terkirim"
                   : "Tandai terkirim"}
               </button>

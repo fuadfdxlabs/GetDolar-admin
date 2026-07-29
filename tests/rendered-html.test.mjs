@@ -77,13 +77,15 @@ test("keeps member list tools intact", async () => {
   assert.match(table, /Tandai terkirim/);
   assert.match(table, /Batalkan terkirim/);
   assert.match(table, /Reset status terkirim/);
+  assert.match(table, /createSentKey/);
   assert.match(table, /localStorage/);
   assert.match(page, /displayMemberName/);
   assert.match(page, /<DashboardShell/);
   assert.match(shell, /Tutup sidebar/);
   assert.match(shell, /Buka sidebar/);
-  assert.match(shell, /grid-cols-\[16rem_minmax\(0,1fr\)\]/);
-  assert.match(shell, /grid-cols-\[0_minmax\(0,1fr\)\]/);
+  assert.match(shell, /lg:flex/);
+  assert.match(shell, /w-64 border-\[#d8ded2\]/);
+  assert.match(shell, /w-0 border-transparent/);
 });
 
 test("uses Vercel-compatible Next build scripts", async () => {
