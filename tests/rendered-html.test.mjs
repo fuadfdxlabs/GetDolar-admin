@@ -53,13 +53,17 @@ test("keeps WhatsApp message concise with invoice link", async () => {
 });
 
 test("keeps member list tools intact", async () => {
-  const table = await readFile(
-    new URL("../app/PaymentProofTable.tsx", import.meta.url),
-    "utf8",
-  );
+  const [table, page, shell] = await Promise.all([
+    readFile(new URL("../app/PaymentProofTable.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/DashboardShell.tsx", import.meta.url), "utf8"),
+  ]);
 
   assert.match(table, /const PAGE_SIZE = 15/);
   assert.match(table, /placeholder="Cari nama, ID member, WA\.\.\."/);
+  assert.match(table, /Salin Norek/);
+  assert.match(table, /navigator\.clipboard/);
+  assert.match(table, /displayMemberName/);
   assert.match(table, /Ada WA/);
   assert.match(table, /No WA kosong/);
   assert.match(table, /Belum dikirim/);
@@ -71,6 +75,11 @@ test("keeps member list tools intact", async () => {
   assert.match(table, /Batalkan terkirim/);
   assert.match(table, /Reset status terkirim/);
   assert.match(table, /localStorage/);
+  assert.match(page, /displayMemberName/);
+  assert.match(page, /<DashboardShell/);
+  assert.match(shell, /Tutup sidebar/);
+  assert.match(shell, /Buka sidebar/);
+  assert.match(shell, /translate-x-0/);
 });
 
 test("uses Vercel-compatible Next build scripts", async () => {

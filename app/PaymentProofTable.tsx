@@ -40,6 +40,7 @@ type FilterKey =
 const PAGE_SIZE = 15;
 const MOBILE_PAGE_SIZE = 15;
 const SENT_STORAGE_KEY = "getdolar.sentPaymentProofIds";
+const COPY_RESET_MS = 1400;
 
 const filters: Array<{
   key: FilterKey;
@@ -53,6 +54,20 @@ const filters: Array<{
 ];
 
 const displayText = (value: string) => value.replace(/_/g, " ");
+
+const displayMemberName = (value: string) => {
+  const cleanValue = displayText(value);
+  const parts = cleanValue
+    .split(" - ")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts[0]?.startsWith("smart-link-") && parts[1]) {
+    return parts[1];
+  }
+
+  return cleanValue;
+};
 
 const formatRupiah = (value: number) =>
   new Intl.NumberFormat("id-ID", {
@@ -82,7 +97,7 @@ const createPaymentProofLines = (payment: PaymentProofRow) => [
   "",
   `Halo ${payment.customer}, pembayaran periode ${payment.period} sudah kami proses.`,
   "",
-  `ID Member: ${displayText(payment.memberId)}`,
+  `ID Member: ${displayMemberName(payment.memberId)}`,
   `No. Invoice: ${payment.id}`,
   `Revenue ($): ${formatDollar(payment.revenue)}`,
   `Referral ($): ${formatDollar(payment.referral)}`,
@@ -144,6 +159,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
   const [showDefaultPreview, setShowDefaultPreview] = useState(false);
   const [sentIds, setSentIds] = useState<string[]>([]);
   const [origin, setOrigin] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -292,6 +308,35 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
 
   const openPaymentProof = (payment: PaymentProofRow) => {
     window.open(getPaymentProofUrl(payment), "_blank", "noopener,noreferrer");
+  };
+
+  const copyToClipboard = async (value: string) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+
+    const input = document.createElement("textarea");
+    input.value = value;
+    input.setAttribute("readonly", "");
+    input.style.position = "fixed";
+    input.style.opacity = "0";
+    document.body.append(input);
+    input.select();
+    document.execCommand("copy");
+    input.remove();
+  };
+
+  const copyAccountNumber = async (payment: PaymentProofRow) => {
+    if (!hasValue(payment.destination)) {
+      return;
+    }
+
+    await copyToClipboard(payment.destination);
+    setCopiedId(payment.id);
+    window.setTimeout(() => {
+      setCopiedId((current) => (current === payment.id ? null : current));
+    }, COPY_RESET_MS);
   };
 
   const resetSentStatuses = () => {
@@ -472,7 +517,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                     {payment.customer}
                   </h4>
                   <p className="mt-1 line-clamp-2 text-xs leading-5 text-[#607065]">
-                    {displayText(payment.memberId)}
+                    {displayMemberName(payment.memberId)}
                   </p>
                 </div>
                 <span
@@ -538,6 +583,14 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 >
                   Buka PDF
                 </button>
+                <button
+                  className="h-11 rounded-md border border-[#cbd4c6] px-4 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-45"
+                  disabled={!hasValue(payment.destination)}
+                  onClick={() => copyAccountNumber(payment)}
+                  type="button"
+                >
+                  {copiedId === payment.id ? "Tersalin" : "Salin Norek"}
+                </button>
                 {payment.phone ? (
                   <button
                     className="h-11 rounded-md bg-[#172019] px-4 text-sm font-bold text-white"
@@ -576,7 +629,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
       </div>
 
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[1240px] table-fixed text-left text-sm">
+        <table className="w-full min-w-[1360px] table-fixed text-left text-sm">
           <thead className="bg-[#f7f9f5] text-xs uppercase text-[#607065]">
             <tr>
               <th className="w-14 px-5 py-3">No.</th>
@@ -589,7 +642,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                   {cell.label}
                 </th>
               ))}
-              <th className="w-64 px-5 py-3">Aksi</th>
+              <th className="w-80 px-5 py-3">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#edf0e9]">
@@ -637,6 +690,14 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                       >
                         {sentIds.includes(payment.id) ? "Batalkan" : "Tandai"}
                       </button>
+                      <button
+                        className="inline-flex h-9 min-w-24 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-45"
+                        disabled={!hasValue(payment.destination)}
+                        onClick={() => copyAccountNumber(payment)}
+                        type="button"
+                      >
+                        {copiedId === payment.id ? "Tersalin" : "Salin Norek"}
+                      </button>
                       <a
                         className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
                         href={createPaymentProofPath(payment)}
@@ -659,6 +720,14 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                       >
                         Buka PDF
                       </a>
+                      <button
+                        className="inline-flex h-9 min-w-24 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-45"
+                        disabled={!hasValue(payment.destination)}
+                        onClick={() => copyAccountNumber(payment)}
+                        type="button"
+                      >
+                        {copiedId === payment.id ? "Tersalin" : "Salin Norek"}
+                      </button>
                     </div>
                   )}
                 </td>

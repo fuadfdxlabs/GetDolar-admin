@@ -138,6 +138,20 @@ const normalize = (value: string) =>
 
 const displayText = (value: string) => value.replace(/_/g, " ");
 
+const displayMemberName = (value: string) => {
+  const cleanValue = displayText(value);
+  const parts = cleanValue
+    .split(" - ")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts[0]?.startsWith("smart-link-") && parts[1]) {
+    return parts[1];
+  }
+
+  return cleanValue;
+};
+
 const pickValue = (
   row: SheetRow,
   headers: string[],
@@ -347,7 +361,7 @@ const createPaymentProofPdf = async (payment: PaymentProofRow) => {
   const paymentDate = formatPaymentDate();
   const logo = await readFile(join(process.cwd(), "public", "getdolar-logo-pdf.jpg"));
   const details = [
-    ["ID Member", displayText(payment.memberId)],
+    ["ID Member", displayMemberName(payment.memberId)],
     ["No. Invoice", payment.id],
     ["Periode", payment.period],
     ["Revenue ($)", formatDollar(payment.revenue)],

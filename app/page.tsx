@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { DashboardShell } from "./DashboardShell";
 import { PaymentProofTable } from "./PaymentProofTable";
 
 export const metadata: Metadata = {
@@ -212,8 +213,24 @@ const displayHeader = (header: string) =>
 
 const displayText = (value: string) => value.replace(/_/g, " ");
 
+const displayMemberName = (value: string) => {
+  const cleanValue = displayText(value);
+  const parts = cleanValue
+    .split(" - ")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts[0]?.startsWith("smart-link-") && parts[1]) {
+    return parts[1];
+  }
+
+  return cleanValue;
+};
+
 const displayCellValue = (header: string, value: string) =>
-  header === "Member_ID" || header === "Domain_ID" ? displayText(value) : value;
+  header === "Member_ID" || header === "Domain_ID"
+    ? displayMemberName(value)
+    : value;
 
 const pickValue = (
   row: SheetRow,
@@ -512,51 +529,11 @@ export default async function Home({
   const tablePayments = createTablePayments(payments, tableHeaders);
 
   return (
-    <main className="min-h-screen bg-[#f5f7f4] text-[#172019]">
-      <aside className="fixed left-0 top-0 hidden h-screen w-64 border-r border-[#d8ded2] bg-[#172019] px-5 py-6 text-white lg:block">
-        <div className="mb-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9fb6a4]">
-            GetDolar
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-normal">
-            Admin Panel
-          </h1>
-        </div>
-        <nav className="space-y-1 text-sm">
-          {[
-            "Dashboard",
-            SHEET_DISPLAY_NAME,
-            PROOF_TEMPLATE_DISPLAY_NAME,
-            "Pembayaran",
-            "Laporan",
-          ].map(
-            (item, index) => (
-              <a
-                className={`flex items-center justify-between rounded-md px-3 py-2.5 ${
-                  index === 0
-                    ? "bg-[#e6ff7a] font-semibold text-[#172019]"
-                    : "text-[#dce8dc] hover:bg-white/10"
-                }`}
-                href="#"
-                key={item}
-              >
-                <span className="truncate">{item}</span>
-                {index === 1 ? (
-                  <span className="text-xs">{payments.length}</span>
-                ) : null}
-              </a>
-            ),
-          )}
-        </nav>
-        <div className="absolute bottom-6 left-5 right-5 rounded-lg border border-white/10 bg-white/5 p-4">
-          <p className="text-sm font-semibold">WhatsApp aktif</p>
-          <p className="mt-1 text-xs leading-5 text-[#b8c9ba]">
-            Bukti pembayaran dibuat dari data member yang sudah dibayar.
-          </p>
-        </div>
-      </aside>
-
-      <section className="lg:pl-64">
+    <DashboardShell
+      paymentsLength={payments.length}
+      proofTemplateDisplayName={PROOF_TEMPLATE_DISPLAY_NAME}
+      sheetDisplayName={SHEET_DISPLAY_NAME}
+    >
         <header className="border-b border-[#d8ded2] bg-white/80 px-5 py-4 backdrop-blur md:px-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
@@ -630,7 +607,6 @@ export default async function Home({
             <PaymentProofTable payments={tablePayments} />
           </div>
         </div>
-      </section>
-    </main>
+    </DashboardShell>
   );
 }
