@@ -86,9 +86,10 @@ test("keeps member list tools intact", async () => {
   assert.match(page, /<DashboardShell/);
   assert.match(shell, /Tutup sidebar/);
   assert.match(shell, /Buka sidebar/);
-  assert.match(shell, /lg:flex/);
-  assert.match(shell, /w-64 border-\[#d8ded2\]/);
-  assert.match(shell, /w-0 border-transparent/);
+  assert.match(shell, /useState\(false\)/);
+  assert.match(shell, /fixed left-0 top-0 z-40/);
+  assert.match(shell, /translate-x-0/);
+  assert.match(shell, /-translate-x-full/);
 });
 
 test("uses Vercel-compatible Next build scripts", async () => {

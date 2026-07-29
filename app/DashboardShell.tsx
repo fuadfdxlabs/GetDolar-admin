@@ -16,7 +16,7 @@ export function DashboardShell({
   sheetDisplayName,
   proofTemplateDisplayName,
 }: DashboardShellProps) {
-  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   const navItems = [
     "Dashboard",
     sheetDisplayName,
@@ -26,30 +26,33 @@ export function DashboardShell({
   ];
 
   return (
-    <main className="min-h-screen bg-[#f5f7f4] text-[#172019] lg:flex">
+    <main className="min-h-screen bg-[#f5f7f4] text-[#172019]">
       <button
         aria-label={sidebarVisible ? "Sembunyikan sidebar" : "Tampilkan sidebar"}
-        className={`fixed bottom-4 z-50 hidden h-10 items-center rounded-md border border-[#cbd4c6] bg-white px-3 text-sm font-bold shadow-sm lg:inline-flex ${
-          sidebarVisible ? "left-[17rem]" : "left-4"
-        }`}
+        className="fixed bottom-4 left-4 z-50 hidden h-10 items-center rounded-md border border-[#cbd4c6] bg-white px-3 text-sm font-bold shadow-sm lg:inline-flex"
         onClick={() => setSidebarVisible((value) => !value)}
         type="button"
       >
         {sidebarVisible ? "Tutup sidebar" : "Buka sidebar"}
       </button>
 
+      {sidebarVisible ? (
+        <button
+          aria-label="Tutup sidebar"
+          className="fixed inset-0 z-30 hidden bg-black/20 lg:block"
+          onClick={() => setSidebarVisible(false)}
+          type="button"
+        />
+      ) : null}
+
       <aside
-        className={`hidden h-screen shrink-0 overflow-hidden border-r bg-[#172019] text-white transition-[width,border-color] duration-200 lg:sticky lg:top-0 lg:block ${
+        className={`fixed left-0 top-0 z-40 hidden h-screen w-64 border-r border-[#d8ded2] bg-[#172019] text-white shadow-2xl transition-transform duration-200 lg:block ${
           sidebarVisible
-            ? "w-64 border-[#d8ded2]"
-            : "w-0 border-transparent"
+            ? "translate-x-0"
+            : "-translate-x-full"
         }`}
       >
-        <div
-          className={`relative h-full w-64 px-5 py-6 transition-opacity duration-150 ${
-            sidebarVisible ? "opacity-100" : "pointer-events-none opacity-0"
-          }`}
-        >
+        <div className="relative h-full w-64 px-5 py-6">
           <div className="mb-10">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9fb6a4]">
               GetDolar
@@ -85,7 +88,7 @@ export function DashboardShell({
         </div>
       </aside>
 
-      <section className="min-w-0 flex-1">{children}</section>
+      <section className="min-w-0">{children}</section>
     </main>
   );
 }
