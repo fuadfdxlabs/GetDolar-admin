@@ -482,7 +482,7 @@ function LoginScreen({ hasError }: { hasError: boolean }) {
           GET DOLAR
         </p>
         <h1 className="mt-2 text-2xl font-semibold">Login Admin</h1>
-        <form action="/api/login" className="mt-6 grid gap-4" method="post">
+        <form action="/api/login" className="mt-6 grid gap-4" method="post" noValidate>
           <label className="grid gap-2 text-sm font-semibold">
             Username
             <input

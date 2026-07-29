@@ -11,6 +11,7 @@ test("keeps admin login gate wired", async () => {
 
   assert.match(page, /Login Admin/);
   assert.match(page, /action="\/api\/login"/);
+  assert.match(page, /noValidate/);
   assert.match(page, /ADMIN_SESSION_COOKIE/);
   assert.match(page, /Logout/);
   assert.match(page, /action="\/api\/logout"/);
