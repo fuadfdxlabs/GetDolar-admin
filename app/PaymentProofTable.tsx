@@ -362,14 +362,14 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
       className="rounded-lg border border-[#d8ded2] bg-white"
       id="data-sheet"
     >
-      <div className="sticky top-0 z-20 flex flex-col gap-4 border-b border-[#e5eadf] bg-white px-5 py-4 xl:static xl:flex-row xl:items-center xl:justify-between">
+      <div className="sticky top-0 z-20 flex flex-col gap-4 border-b border-[#e5eadf] bg-white px-5 py-4 2xl:static 2xl:flex-row 2xl:items-center 2xl:justify-between">
         <div>
           <h3 className="text-lg font-semibold">Pendapatan per Member</h3>
           <p className="hidden text-sm text-[#607065] sm:block">
             Menampilkan 15 baris per halaman dari data pembayaran.
           </p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center 2xl:shrink-0">
           <label className="sr-only" htmlFor="payment-search">
             Cari data pembayaran
           </label>
@@ -384,7 +384,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
             {filteredPayments.length} data · {sentCount} terkirim
           </span>
         </div>
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="flex gap-2 overflow-x-auto 2xl:shrink-0">
           {filters.map((item) => (
             <button
               className={`h-9 shrink-0 rounded-md px-3 text-xs font-bold ${
@@ -400,7 +400,7 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 2xl:justify-end">
           {defaultPreviewPayment ? (
             <button
               className="h-10 rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
@@ -648,29 +648,29 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
       </div>
 
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[1360px] table-fixed text-left text-sm">
+        <table className="w-full min-w-[1180px] table-fixed text-left text-sm">
           <thead className="bg-[#f7f9f5] text-xs uppercase text-[#607065]">
             <tr>
-              <th className="w-14 px-5 py-3">No.</th>
-              <th className="w-20 px-5 py-3">Pilih</th>
+              <th className="w-12 px-3 py-3">No.</th>
+              <th className="w-16 px-3 py-3">Pilih</th>
               {payments[0]?.cells.map((cell, index) => (
                 <th
-                  className="px-5 py-3"
+                  className="px-3 py-3"
                   key={`${index}-${cell.label}`}
                 >
                   {cell.label}
                 </th>
               ))}
-              <th className="w-80 px-5 py-3">Aksi</th>
+              <th className="w-72 px-3 py-3">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#edf0e9]">
             {visiblePayments.map((payment, index) => (
               <tr key={`${payment.id}-${pageStart + index}`}>
-                <td className="px-5 py-4 font-semibold text-[#607065]">
+                <td className="px-3 py-4 font-semibold text-[#607065]">
                   {pageStart + index + 1}
                 </td>
-                <td className="px-5 py-4">
+                <td className="px-3 py-4">
                   <input
                     aria-label={`Pilih ${payment.customer}`}
                     checked={selectedIds.includes(payment.id)}
@@ -681,13 +681,13 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                 </td>
                 {payment.cells.map((cell, cellIndex) => (
                   <td
-                    className="px-5 py-4"
+                    className="px-3 py-4"
                     key={`${cellIndex}-${cell.label}`}
                   >
                     <span className="line-clamp-2">{cell.value}</span>
                   </td>
                 ))}
-                <td className="px-5 py-4">
+                <td className="px-3 py-4">
                   {payment.phone ? (
                     <div className="flex flex-col gap-2">
                       <div>
@@ -699,41 +699,41 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                      <a
-                        className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md bg-[#25d366] px-3 text-xs font-bold text-[#062511]"
-                        href={createWhatsappUrl(payment, getPaymentProofUrl(payment))}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        Kirim WA
-                      </a>
-                      <button
-                        className={`inline-flex h-9 items-center justify-center whitespace-nowrap rounded-md px-3 text-xs font-bold ${
-                          sentIds.includes(payment.id)
-                            ? "bg-[#172019] text-white"
-                            : "border border-[#cbd4c6]"
-                        }`}
-                        onClick={() => toggleSent(payment)}
-                        type="button"
-                      >
-                        {sentIds.includes(payment.id) ? "Batalkan" : "Tandai"}
-                      </button>
-                      <button
-                        className="inline-flex h-9 min-w-24 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-45"
-                        disabled={!hasValue(payment.destination)}
-                        onClick={() => copyAccountNumber(payment)}
-                        type="button"
-                      >
-                        {copiedId === payment.id ? "Tersalin" : "Salin Norek"}
-                      </button>
-                      <a
-                        className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
-                        href={createPaymentProofPath(payment)}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        Buka PDF
-                      </a>
+                        <a
+                          className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md bg-[#25d366] px-3 text-xs font-bold text-[#062511]"
+                          href={createWhatsappUrl(payment, getPaymentProofUrl(payment))}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Kirim WA
+                        </a>
+                        <button
+                          className={`inline-flex h-9 items-center justify-center whitespace-nowrap rounded-md px-3 text-xs font-bold ${
+                            sentIds.includes(payment.id)
+                              ? "bg-[#172019] text-white"
+                              : "border border-[#cbd4c6]"
+                          }`}
+                          onClick={() => toggleSent(payment)}
+                          type="button"
+                        >
+                          {sentIds.includes(payment.id) ? "Batalkan" : "Tandai"}
+                        </button>
+                        <button
+                          className="inline-flex h-9 min-w-24 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-45"
+                          disabled={!hasValue(payment.destination)}
+                          onClick={() => copyAccountNumber(payment)}
+                          type="button"
+                        >
+                          {copiedId === payment.id ? "Tersalin" : "Salin Norek"}
+                        </button>
+                        <a
+                          className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
+                          href={createPaymentProofPath(payment)}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Buka PDF
+                        </a>
                       </div>
                     </div>
                   ) : (
@@ -747,25 +747,25 @@ export function PaymentProofTable({ payments }: PaymentProofTableProps) {
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                      <span className="inline-flex min-w-20 text-xs font-semibold leading-5 text-[#9b392f]">
-                        No WA kosong
-                      </span>
-                      <a
-                        className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
-                        href={createPaymentProofPath(payment)}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        Buka PDF
-                      </a>
-                      <button
-                        className="inline-flex h-9 min-w-24 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-45"
-                        disabled={!hasValue(payment.destination)}
-                        onClick={() => copyAccountNumber(payment)}
-                        type="button"
-                      >
-                        {copiedId === payment.id ? "Tersalin" : "Salin Norek"}
-                      </button>
+                        <span className="inline-flex min-w-20 text-xs font-semibold leading-5 text-[#9b392f]">
+                          No WA kosong
+                        </span>
+                        <a
+                          className="inline-flex h-9 min-w-20 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold"
+                          href={createPaymentProofPath(payment)}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Buka PDF
+                        </a>
+                        <button
+                          className="inline-flex h-9 min-w-24 items-center justify-center whitespace-nowrap rounded-md border border-[#cbd4c6] px-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-45"
+                          disabled={!hasValue(payment.destination)}
+                          onClick={() => copyAccountNumber(payment)}
+                          type="button"
+                        >
+                          {copiedId === payment.id ? "Tersalin" : "Salin Norek"}
+                        </button>
                       </div>
                     </div>
                   )}

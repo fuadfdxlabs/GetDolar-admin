@@ -29,7 +29,7 @@ export function DashboardShell({
     <main className="min-h-screen bg-[#f5f7f4] text-[#172019]">
       <button
         aria-label={sidebarVisible ? "Sembunyikan sidebar" : "Tampilkan sidebar"}
-        className={`fixed top-4 z-50 hidden h-10 items-center rounded-md border border-[#cbd4c6] bg-white px-3 text-sm font-bold shadow-sm lg:inline-flex ${
+        className={`fixed bottom-4 z-50 hidden h-10 items-center rounded-md border border-[#cbd4c6] bg-white px-3 text-sm font-bold shadow-sm lg:inline-flex ${
           sidebarVisible ? "left-[17rem]" : "left-4"
         }`}
         onClick={() => setSidebarVisible((value) => !value)}
