@@ -1,5 +1,7 @@
-const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "admin4321";
+const ADMIN_ACCOUNTS = [
+  { username: "admin", password: "admin4321" },
+  { username: "admin", password: "adminfdx31" },
+];
 const ADMIN_SESSION_COOKIE = "getdolar_admin_session";
 const ADMIN_SESSION_VALUE = "getdolar-admin-authenticated";
 
@@ -9,7 +11,11 @@ export async function POST(request: Request) {
   const password = String(formData.get("password") ?? "");
   const redirectUrl = new URL("/", request.url);
 
-  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+  const isValidAccount = ADMIN_ACCOUNTS.some(
+    (account) => account.username === username && account.password === password,
+  );
+
+  if (!isValidAccount) {
     redirectUrl.searchParams.set("login", "error");
     return Response.redirect(redirectUrl, 303);
   }

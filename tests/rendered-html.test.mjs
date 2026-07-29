@@ -14,8 +14,10 @@ test("keeps admin login gate wired", async () => {
   assert.match(page, /ADMIN_SESSION_COOKIE/);
   assert.match(page, /Logout/);
   assert.match(page, /action="\/api\/logout"/);
-  assert.match(loginRoute, /ADMIN_USERNAME = "admin"/);
-  assert.match(loginRoute, /ADMIN_PASSWORD = "admin4321"/);
+  assert.match(loginRoute, /ADMIN_ACCOUNTS/);
+  assert.match(loginRoute, /username: "admin"/);
+  assert.match(loginRoute, /password: "admin4321"/);
+  assert.match(loginRoute, /password: "adminfdx31"/);
   assert.match(loginRoute, /set-cookie/);
   assert.match(logoutRoute, /Max-Age=0/);
 });
