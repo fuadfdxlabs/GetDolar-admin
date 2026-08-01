@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   }
 
   const scriptUrl = process.env.RAW_ADSTERRA_SCRIPT_URL;
-  const secret = process.env.RAW_ADSTERRA_SECRET;
+  const secret = process.env.RAW_ADSTERRA_SECRET?.trim();
 
   if (!scriptUrl || !secret) {
     return Response.json(

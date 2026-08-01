@@ -18,11 +18,14 @@ function jsonResponse(payload, statusCode) {
 function doPost(event) {
   try {
     const payload = JSON.parse(event.postData.contents || "{}");
-    const expectedSecret = PropertiesService.getScriptProperties().getProperty(
-      "RAW_ADSTERRA_SECRET",
-    );
+    const expectedSecret = String(
+      PropertiesService.getScriptProperties().getProperty(
+        "RAW_ADSTERRA_SECRET",
+      ) || "",
+    ).trim();
+    const receivedSecret = String(payload.secret || "").trim();
 
-    if (!expectedSecret || payload.secret !== expectedSecret) {
+    if (!expectedSecret || receivedSecret !== expectedSecret) {
       return jsonResponse({ ok: false, error: "Unauthorized." }, 401);
     }
 
