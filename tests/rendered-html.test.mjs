@@ -113,9 +113,13 @@ test("keeps raw Adsterra upload tools wired", async () => {
 
   assert.match(uploader, /parseCsv/);
   assert.match(uploader, /rawAdsterraColumns/);
+  assert.match(uploader, /formatRawAdsterraCell/);
+  assert.match(uploader, /dollarDecimalColumns/);
+  assert.match(uploader, /replace\(\/\\\.\(\?=\\d\)\/g, ","\)/);
   assert.match(uploader, /Placement/);
   assert.match(uploader, /Impressions/);
   assert.match(uploader, /Revenue/);
+  assert.match(uploader, /CPM dan Revenue sudah pakai koma desimal/);
   assert.match(uploader, /accept="\.csv,text\/csv"/);
   assert.match(uploader, /Salin 6 kolom Adsterra/);
   assert.match(uploader, /Update Raw_Adsterra otomatis/);
@@ -131,6 +135,7 @@ test("keeps raw Adsterra upload tools wired", async () => {
   assert.match(route, /ADMIN_SESSION_COOKIE/);
   assert.match(appsScript, /RAW_ADSTERRA_SHEET_NAME = "Raw_Adsterra"/);
   assert.match(appsScript, /RAW_ADSTERRA_START_COLUMN = 3/);
+  assert.match(appsScript, /setNumberFormat\("@\"\)/);
   assert.match(appsScript, /setValues\(rows\)/);
   assert.match(envExample, /RAW_ADSTERRA_SCRIPT_URL=/);
   assert.match(envExample, /RAW_ADSTERRA_SECRET=/);

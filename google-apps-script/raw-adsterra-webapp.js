@@ -58,24 +58,24 @@ function doPost(event) {
     }
 
     const maxRows = Math.max(sheet.getLastRow() - 1, rows.length, 1);
-    sheet
-      .getRange(
-        RAW_ADSTERRA_START_ROW,
-        RAW_ADSTERRA_START_COLUMN,
-        maxRows,
-        RAW_ADSTERRA_COLUMNS.length,
-      )
-      .clearContent();
+    const clearRange = sheet.getRange(
+      RAW_ADSTERRA_START_ROW,
+      RAW_ADSTERRA_START_COLUMN,
+      maxRows,
+      RAW_ADSTERRA_COLUMNS.length,
+    );
+    clearRange.clearContent();
+    clearRange.setNumberFormat("@");
 
     if (rows.length) {
-      sheet
-        .getRange(
-          RAW_ADSTERRA_START_ROW,
-          RAW_ADSTERRA_START_COLUMN,
-          rows.length,
-          RAW_ADSTERRA_COLUMNS.length,
-        )
-        .setValues(rows);
+      const updateRange = sheet.getRange(
+        RAW_ADSTERRA_START_ROW,
+        RAW_ADSTERRA_START_COLUMN,
+        rows.length,
+        RAW_ADSTERRA_COLUMNS.length,
+      );
+      updateRange.setNumberFormat("@");
+      updateRange.setValues(rows);
     }
 
     return jsonResponse({ ok: true, updatedRows: rows.length }, 200);

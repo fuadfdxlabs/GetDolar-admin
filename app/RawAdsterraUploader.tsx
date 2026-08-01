@@ -16,6 +16,16 @@ const rawAdsterraColumns = [
   "Revenue",
 ];
 
+const dollarDecimalColumns = new Set(["CPM", "Revenue"]);
+
+const formatRawAdsterraCell = (column: string, value: string) => {
+  if (!dollarDecimalColumns.has(column)) {
+    return value;
+  }
+
+  return value.replace(/\.(?=\d)/g, ",");
+};
+
 const parseCsv = (csv: string): ParsedCsv => {
   const rows: string[][] = [];
   let field = "";
@@ -92,7 +102,12 @@ const createRawAdsterraRows = ({ headers, rows }: ParsedCsv) => {
   }
 
   return rows.map((row) =>
-    columnIndexes.map((columnIndex) => row[columnIndex] || ""),
+    columnIndexes.map((columnIndex, outputIndex) =>
+      formatRawAdsterraCell(
+        rawAdsterraColumns[outputIndex],
+        row[columnIndex] || "",
+      ),
+    ),
   );
 };
 
@@ -237,7 +252,9 @@ export function RawAdsterraUploader({
     }
 
     await copyToClipboard(tsv);
-    setCopyStatus("Data 6 kolom siap ditempel mulai dari kolom C.");
+    setCopyStatus(
+      "Data 6 kolom siap ditempel mulai dari kolom C. CPM dan Revenue sudah pakai koma desimal.",
+    );
   };
 
   const updateSheet = async () => {
@@ -299,7 +316,8 @@ export function RawAdsterraUploader({
           <p className="mt-1 text-sm leading-6 text-[#607065]">
             Upload CSV statistik Adsterra, cek preview, lalu salin data untuk
             ditempel mulai kolom C di sheet {sheetName}. Kolom Periode dan
-            API_Date tidak ikut diganti.
+            API_Date tidak ikut diganti. CPM dan Revenue otomatis pakai koma
+            desimal.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -444,7 +462,8 @@ export function RawAdsterraUploader({
           {hasRows ? (
             <p className="text-xs leading-5 text-[#607065]">
               Preview menampilkan 6 kolom update dan 8 baris pertama. Data yang
-              disalin tidak menyertakan Periode dan API_Date.
+              disalin tidak menyertakan Periode dan API_Date. CPM dan Revenue
+              sudah dikonversi dari titik ke koma.
             </p>
           ) : null}
         </div>
