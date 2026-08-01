@@ -65,7 +65,6 @@ function doPost(event) {
       RAW_ADSTERRA_COLUMNS.length,
     );
     clearRange.clearContent();
-    clearRange.setNumberFormat("@");
 
     if (rows.length) {
       const updateRange = sheet.getRange(
@@ -74,7 +73,6 @@ function doPost(event) {
         rows.length,
         RAW_ADSTERRA_COLUMNS.length,
       );
-      updateRange.setNumberFormat("@");
       updateRange.setValues(rows);
     }
 
