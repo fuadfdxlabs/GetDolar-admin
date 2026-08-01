@@ -101,10 +101,15 @@ test("keeps member list tools intact", async () => {
 });
 
 test("keeps raw Adsterra upload tools wired", async () => {
-  const uploader = await readFile(
-    new URL("../app/RawAdsterraUploader.tsx", import.meta.url),
-    "utf8",
-  );
+  const [uploader, route, appsScript, envExample] = await Promise.all([
+    readFile(new URL("../app/RawAdsterraUploader.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/raw-adsterra/route.ts", import.meta.url), "utf8"),
+    readFile(
+      new URL("../google-apps-script/raw-adsterra-webapp.js", import.meta.url),
+      "utf8",
+    ),
+    readFile(new URL("../.env.example", import.meta.url), "utf8"),
+  ]);
 
   assert.match(uploader, /parseCsv/);
   assert.match(uploader, /rawAdsterraColumns/);
@@ -113,11 +118,21 @@ test("keeps raw Adsterra upload tools wired", async () => {
   assert.match(uploader, /Revenue/);
   assert.match(uploader, /accept="\.csv,text\/csv"/);
   assert.match(uploader, /Salin 6 kolom Adsterra/);
+  assert.match(uploader, /Update Raw_Adsterra otomatis/);
+  assert.match(uploader, /\/api\/raw-adsterra/);
   assert.match(uploader, /Kolom Periode dan/);
   assert.match(uploader, /API_Date tidak ikut diganti/);
   assert.match(uploader, /navigator\.clipboard\.writeText/);
   assert.match(uploader, /Belum ada CSV yang diupload/);
   assert.match(uploader, /Preview menampilkan 6 kolom update dan 8 baris pertama/);
+  assert.match(route, /RAW_ADSTERRA_SCRIPT_URL/);
+  assert.match(route, /RAW_ADSTERRA_SECRET/);
+  assert.match(route, /ADMIN_SESSION_COOKIE/);
+  assert.match(appsScript, /RAW_ADSTERRA_SHEET_NAME = "Raw_Adsterra"/);
+  assert.match(appsScript, /RAW_ADSTERRA_START_COLUMN = 3/);
+  assert.match(appsScript, /setValues\(rows\)/);
+  assert.match(envExample, /RAW_ADSTERRA_SCRIPT_URL=/);
+  assert.match(envExample, /RAW_ADSTERRA_SECRET=/);
 });
 
 test("uses Vercel-compatible Next build scripts", async () => {
