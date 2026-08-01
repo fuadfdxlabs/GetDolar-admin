@@ -18,11 +18,12 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const navItems = [
-    "Dashboard",
-    sheetDisplayName,
-    proofTemplateDisplayName,
-    "Pembayaran",
-    "Laporan",
+    { label: "Dashboard", href: "#" },
+    { label: sheetDisplayName, href: "#data-sheet", meta: paymentsLength },
+    { label: "Update Raw Adsterra", href: "#raw-adsterra" },
+    { label: proofTemplateDisplayName, href: "#data-sheet" },
+    { label: "Pembayaran", href: "#data-sheet" },
+    { label: "Laporan", href: "#data-sheet" },
   ];
 
   return (
@@ -69,12 +70,13 @@ export function DashboardShell({
                     ? "bg-[#e6ff7a] font-semibold text-[#172019]"
                     : "text-[#dce8dc] hover:bg-white/10"
                 }`}
-                href="#"
-                key={item}
+                href={item.href}
+                key={item.label}
+                onClick={() => setSidebarVisible(false)}
               >
-                <span className="truncate">{item}</span>
-                {index === 1 ? (
-                  <span className="text-xs">{paymentsLength}</span>
+                <span className="truncate">{item.label}</span>
+                {item.meta ? (
+                  <span className="text-xs">{item.meta}</span>
                 ) : null}
               </a>
             ))}

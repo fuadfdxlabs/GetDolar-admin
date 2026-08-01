@@ -86,13 +86,32 @@ test("keeps member list tools intact", async () => {
   assert.match(page, /displayMemberName/);
   assert.match(page, /Status_Kirim/);
   assert.match(page, /Tanggal_Kirim/);
+  assert.match(page, /Raw_Adsterra/);
+  assert.match(page, /<RawAdsterraUploader/);
+  assert.match(page, /Upload Adsterra/);
   assert.match(page, /<DashboardShell/);
   assert.match(shell, /Tutup sidebar/);
   assert.match(shell, /Buka sidebar/);
+  assert.match(shell, /Update Raw Adsterra/);
+  assert.match(shell, /#raw-adsterra/);
   assert.match(shell, /useState\(false\)/);
   assert.match(shell, /fixed left-0 top-0 z-40/);
   assert.match(shell, /translate-x-0/);
   assert.match(shell, /-translate-x-full/);
+});
+
+test("keeps raw Adsterra upload tools wired", async () => {
+  const uploader = await readFile(
+    new URL("../app/RawAdsterraUploader.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(uploader, /parseCsv/);
+  assert.match(uploader, /accept="\.csv,text\/csv"/);
+  assert.match(uploader, /Salin data untuk/);
+  assert.match(uploader, /navigator\.clipboard\.writeText/);
+  assert.match(uploader, /Belum ada CSV yang diupload/);
+  assert.match(uploader, /Preview menampilkan 8 kolom dan 8 baris pertama/);
 });
 
 test("uses Vercel-compatible Next build scripts", async () => {

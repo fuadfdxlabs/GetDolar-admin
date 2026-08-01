@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { DashboardShell } from "./DashboardShell";
 import { PaymentProofTable } from "./PaymentProofTable";
+import { RawAdsterraUploader } from "./RawAdsterraUploader";
 
 export const metadata: Metadata = {
   title: "GetDolar Admin Dashboard",
@@ -14,10 +15,13 @@ export const dynamic = "force-dynamic";
 const SHEET_ID = "1igG8M1bQEo6QaE9_y-OyPMLoNs4y6skeO6oKkuorPMo";
 const SHEET_GID = "1523444064";
 const SHEET_NAME = "Pend_Per_Member_Final";
+const RAW_ADSTERRA_SHEET = "Raw_Adsterra";
 const PROOF_TEMPLATE_SHEET = "Bukti_Pembayaran";
 const SHEET_DISPLAY_NAME = "Pendapatan per Member";
+const RAW_ADSTERRA_DISPLAY_NAME = "Update Raw Adsterra";
 const PROOF_TEMPLATE_DISPLAY_NAME = "Bukti Pembayaran";
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+const SHEET_EDIT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit?gid=${SHEET_GID}#gid=${SHEET_GID}`;
 const ADMIN_SESSION_COOKIE = "getdolar_admin_session";
 const ADMIN_SESSION_VALUE = "getdolar-admin-authenticated";
 
@@ -567,10 +571,16 @@ export default async function Home({
               </form>
               <a
                 className="inline-flex h-10 items-center rounded-md border border-[#cbd4c6] bg-white px-4 text-sm font-semibold"
-                href={`https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit?gid=${SHEET_GID}#gid=${SHEET_GID}`}
+                href={SHEET_EDIT_URL}
                 target="_blank"
               >
                 Buka Sheet
+              </a>
+              <a
+                className="inline-flex h-10 items-center rounded-md border border-[#cbd4c6] bg-white px-4 text-sm font-semibold"
+                href="#raw-adsterra"
+              >
+                Upload Adsterra
               </a>
               <a
                 className="inline-flex h-10 items-center rounded-md bg-[#172019] px-4 text-sm font-semibold text-white"
@@ -599,7 +609,7 @@ export default async function Home({
                 ["Data member", String(payments.length), SHEET_DISPLAY_NAME],
                 ["Total dibayar", formatRupiah(totalAmount), "dari diterima bersih"],
                 ["Nomor WA siap", `${whatsappReady}`, "bisa dikirim"],
-                ["Template", PROOF_TEMPLATE_DISPLAY_NAME, "siap dikirim"],
+                [RAW_ADSTERRA_DISPLAY_NAME, RAW_ADSTERRA_SHEET, "upload CSV"],
               ].map(([label, value, meta]) => (
                 <div
                   className="rounded-lg border border-[#d8ded2] bg-white p-4"
@@ -615,6 +625,11 @@ export default async function Home({
                 </div>
               ))}
             </section>
+
+            <RawAdsterraUploader
+              sheetName={RAW_ADSTERRA_SHEET}
+              sheetUrl={SHEET_EDIT_URL}
+            />
 
             <PaymentProofTable payments={tablePayments} />
           </div>
