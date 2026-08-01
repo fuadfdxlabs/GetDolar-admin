@@ -135,8 +135,11 @@ test("keeps raw Adsterra upload tools wired", async () => {
   assert.match(route, /ADMIN_SESSION_COOKIE/);
   assert.match(appsScript, /RAW_ADSTERRA_SHEET_NAME = "Raw_Adsterra"/);
   assert.match(appsScript, /RAW_ADSTERRA_START_COLUMN = 3/);
-  assert.doesNotMatch(appsScript, /setNumberFormat/);
-  assert.match(appsScript, /setValues\(rows\)/);
+  assert.match(appsScript, /normalizeRow/);
+  assert.match(appsScript, /parseNumberCell/);
+  assert.match(appsScript, /parsePercentCell/);
+  assert.match(appsScript, /setNumberFormat\('"\$"#,##0\.00'\)/);
+  assert.match(appsScript, /setValues\(normalizedRows\)/);
   assert.match(envExample, /RAW_ADSTERRA_SCRIPT_URL=/);
   assert.match(envExample, /RAW_ADSTERRA_SECRET=/);
 });

@@ -10,6 +10,53 @@ const RAW_ADSTERRA_COLUMNS = [
   "Revenue",
 ];
 
+function parseNumberCell(value) {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  const normalized = String(value || "")
+    .replace(/[^\d,.-]/g, "")
+    .trim();
+  const decimalNormalized = normalized.includes(",")
+    ? normalized.replace(/\./g, "").replace(/,/g, ".")
+    : normalized;
+  const parsed = Number(decimalNormalized);
+  return Number.isFinite(parsed) ? parsed : value;
+}
+
+function parsePercentCell(value) {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  const text = String(value || "").trim();
+  const normalized = text
+    .replace(/[^\d,.-]/g, "")
+    .trim();
+  const decimalNormalized = normalized.includes(",")
+    ? normalized.replace(/\./g, "").replace(/,/g, ".")
+    : normalized;
+  const parsed = Number(decimalNormalized);
+
+  if (!Number.isFinite(parsed)) {
+    return value;
+  }
+
+  return text.includes("%") ? parsed / 100 : parsed;
+}
+
+function normalizeRow(row) {
+  return [
+    row[0],
+    parseNumberCell(row[1]),
+    parseNumberCell(row[2]),
+    parsePercentCell(row[3]),
+    parseNumberCell(row[4]),
+    parseNumberCell(row[5]),
+  ];
+}
+
 function jsonResponse(payload, statusCode) {
   return ContentService.createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
@@ -57,7 +104,8 @@ function doPost(event) {
       );
     }
 
-    const maxRows = Math.max(sheet.getLastRow() - 1, rows.length, 1);
+    const normalizedRows = rows.map(normalizeRow);
+    const maxRows = Math.max(sheet.getLastRow() - 1, normalizedRows.length, 1);
     const clearRange = sheet.getRange(
       RAW_ADSTERRA_START_ROW,
       RAW_ADSTERRA_START_COLUMN,
@@ -66,17 +114,41 @@ function doPost(event) {
     );
     clearRange.clearContent();
 
-    if (rows.length) {
+    if (normalizedRows.length) {
       const updateRange = sheet.getRange(
         RAW_ADSTERRA_START_ROW,
         RAW_ADSTERRA_START_COLUMN,
-        rows.length,
+        normalizedRows.length,
         RAW_ADSTERRA_COLUMNS.length,
       );
-      updateRange.setValues(rows);
+      updateRange.setValues(normalizedRows);
+      sheet
+        .getRange(
+          RAW_ADSTERRA_START_ROW,
+          RAW_ADSTERRA_START_COLUMN + 1,
+          normalizedRows.length,
+          1,
+        )
+        .setNumberFormat("#,##0");
+      sheet
+        .getRange(
+          RAW_ADSTERRA_START_ROW,
+          RAW_ADSTERRA_START_COLUMN + 3,
+          normalizedRows.length,
+          1,
+        )
+        .setNumberFormat("0%");
+      sheet
+        .getRange(
+          RAW_ADSTERRA_START_ROW,
+          RAW_ADSTERRA_START_COLUMN + 4,
+          normalizedRows.length,
+          2,
+        )
+        .setNumberFormat('"$"#,##0.00');
     }
 
-    return jsonResponse({ ok: true, updatedRows: rows.length }, 200);
+    return jsonResponse({ ok: true, updatedRows: normalizedRows.length }, 200);
   } catch (error) {
     return jsonResponse(
       {
