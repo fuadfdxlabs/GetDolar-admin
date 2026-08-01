@@ -31,7 +31,9 @@ export async function POST(request: Request) {
     return Response.json({ error: "Login admin dulu." }, { status: 401 });
   }
 
-  const scriptUrl = process.env.RAW_ADSTERRA_SCRIPT_URL;
+  const scriptUrl =
+    process.env.RAW_ADSTERRA_SCRIPT_URL ||
+    process.env.RAW_ADSTERRA_SCRIPTI_URL;
   const secret = process.env.RAW_ADSTERRA_SECRET?.trim();
 
   if (!scriptUrl || !secret) {

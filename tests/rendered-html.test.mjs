@@ -126,6 +126,7 @@ test("keeps raw Adsterra upload tools wired", async () => {
   assert.match(uploader, /Belum ada CSV yang diupload/);
   assert.match(uploader, /Preview menampilkan 6 kolom update dan 8 baris pertama/);
   assert.match(route, /RAW_ADSTERRA_SCRIPT_URL/);
+  assert.match(route, /RAW_ADSTERRA_SCRIPTI_URL/);
   assert.match(route, /RAW_ADSTERRA_SECRET/);
   assert.match(route, /ADMIN_SESSION_COOKIE/);
   assert.match(appsScript, /RAW_ADSTERRA_SHEET_NAME = "Raw_Adsterra"/);
