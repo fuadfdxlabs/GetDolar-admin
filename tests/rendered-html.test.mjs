@@ -107,11 +107,17 @@ test("keeps raw Adsterra upload tools wired", async () => {
   );
 
   assert.match(uploader, /parseCsv/);
+  assert.match(uploader, /rawAdsterraColumns/);
+  assert.match(uploader, /Placement/);
+  assert.match(uploader, /Impressions/);
+  assert.match(uploader, /Revenue/);
   assert.match(uploader, /accept="\.csv,text\/csv"/);
-  assert.match(uploader, /Salin data untuk/);
+  assert.match(uploader, /Salin 6 kolom Adsterra/);
+  assert.match(uploader, /Kolom Periode dan/);
+  assert.match(uploader, /API_Date tidak ikut diganti/);
   assert.match(uploader, /navigator\.clipboard\.writeText/);
   assert.match(uploader, /Belum ada CSV yang diupload/);
-  assert.match(uploader, /Preview menampilkan 8 kolom dan 8 baris pertama/);
+  assert.match(uploader, /Preview menampilkan 6 kolom update dan 8 baris pertama/);
 });
 
 test("uses Vercel-compatible Next build scripts", async () => {

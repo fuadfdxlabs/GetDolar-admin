@@ -7,6 +7,15 @@ type ParsedCsv = {
   rows: string[][];
 };
 
+const rawAdsterraColumns = [
+  "Placement",
+  "Impressions",
+  "Clicks",
+  "CTR",
+  "CPM",
+  "Revenue",
+];
+
 const parseCsv = (csv: string): ParsedCsv => {
   const rows: string[][] = [];
   let field = "";
@@ -65,11 +74,30 @@ const findColumnIndex = (headers: string[], candidates: string[]) =>
     return candidates.some((candidate) => normalized.includes(candidate));
   });
 
+const findExactColumnIndex = (headers: string[], column: string) =>
+  headers.findIndex(
+    (header) => header.trim().toLowerCase() === column.toLowerCase(),
+  );
+
 const escapeTsvCell = (value: string) =>
   value.replace(/\t/g, " ").replace(/\r?\n/g, " ").trim();
 
-const createTsv = ({ headers, rows }: ParsedCsv) =>
-  [headers, ...rows]
+const createRawAdsterraRows = ({ headers, rows }: ParsedCsv) => {
+  const columnIndexes = rawAdsterraColumns.map((column) =>
+    findExactColumnIndex(headers, column),
+  );
+
+  if (columnIndexes.some((index) => index < 0)) {
+    return [];
+  }
+
+  return rows.map((row) =>
+    columnIndexes.map((columnIndex) => row[columnIndex] || ""),
+  );
+};
+
+const createRawAdsterraTsv = (rows: string[][]) =>
+  rows
     .map((row) => row.map((cell) => escapeTsvCell(cell)).join("\t"))
     .join("\n");
 
@@ -156,7 +184,14 @@ export function RawAdsterraUploader({
     };
   }, [parsedCsv]);
 
-  const tsv = useMemo(() => createTsv(parsedCsv), [parsedCsv]);
+  const rawAdsterraRows = useMemo(
+    () => createRawAdsterraRows(parsedCsv),
+    [parsedCsv],
+  );
+  const tsv = useMemo(
+    () => createRawAdsterraTsv(rawAdsterraRows),
+    [rawAdsterraRows],
+  );
   const hasRows = parsedCsv.rows.length > 0;
 
   const handleFile = async (file?: File) => {
@@ -180,6 +215,15 @@ export function RawAdsterraUploader({
       return;
     }
 
+    const missingColumns = rawAdsterraColumns.filter(
+      (column) => findExactColumnIndex(nextParsedCsv.headers, column) < 0,
+    );
+
+    if (missingColumns.length) {
+      setError(`Kolom wajib belum ada: ${missingColumns.join(", ")}.`);
+      return;
+    }
+
     setFileName(file.name);
     setParsedCsv(nextParsedCsv);
   };
@@ -190,7 +234,7 @@ export function RawAdsterraUploader({
     }
 
     await copyToClipboard(tsv);
-    setCopyStatus("Data siap ditempel ke Raw_Adsterra.");
+    setCopyStatus("Data 6 kolom siap ditempel mulai dari kolom C.");
   };
 
   const resetUpload = () => {
@@ -213,7 +257,8 @@ export function RawAdsterraUploader({
           <h3 className="mt-1 text-lg font-semibold">Update Raw Adsterra</h3>
           <p className="mt-1 text-sm leading-6 text-[#607065]">
             Upload CSV statistik Adsterra, cek preview, lalu salin data untuk
-            ditempel ke sheet {sheetName}.
+            ditempel mulai kolom C di sheet {sheetName}. Kolom Periode dan
+            API_Date tidak ikut diganti.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -272,7 +317,7 @@ export function RawAdsterraUploader({
             onClick={copyTsv}
             type="button"
           >
-            Salin data untuk {sheetName}
+            Salin 6 kolom Adsterra
           </button>
 
           {copyStatus ? (
@@ -286,7 +331,7 @@ export function RawAdsterraUploader({
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {[
               ["Baris", String(stats.totalRows)],
-              ["Kolom", String(parsedCsv.headers.length)],
+              ["Kolom update", String(rawAdsterraColumns.length)],
               ["Revenue", formatDollar(stats.totalRevenue)],
               ["Clicks", String(stats.totalClicks)],
             ].map(([label, value]) => (
@@ -306,11 +351,10 @@ export function RawAdsterraUploader({
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="bg-[#f7f9f5] text-xs uppercase text-[#607065]">
                 <tr>
-                  {(parsedCsv.headers.length
-                    ? parsedCsv.headers
+                  {(rawAdsterraRows.length
+                    ? rawAdsterraColumns
                     : ["Upload CSV untuk melihat preview"]
                   )
-                    .slice(0, 8)
                     .map((header) => (
                       <th className="px-3 py-3" key={header}>
                         {header}
@@ -319,9 +363,9 @@ export function RawAdsterraUploader({
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#edf0e9]">
-                {parsedCsv.rows.slice(0, 8).map((row, rowIndex) => (
+                {rawAdsterraRows.slice(0, 8).map((row, rowIndex) => (
                   <tr key={`${rowIndex}-${row.join("-")}`}>
-                    {parsedCsv.headers.slice(0, 8).map((header, cellIndex) => (
+                    {rawAdsterraColumns.map((header, cellIndex) => (
                       <td className="px-3 py-3" key={`${header}-${cellIndex}`}>
                         <span className="line-clamp-2">
                           {row[cellIndex] || "-"}
@@ -343,8 +387,8 @@ export function RawAdsterraUploader({
 
           {hasRows ? (
             <p className="text-xs leading-5 text-[#607065]">
-              Preview menampilkan 8 kolom dan 8 baris pertama. Data yang disalin
-              tetap berisi semua kolom dan semua baris dari CSV.
+              Preview menampilkan 6 kolom update dan 8 baris pertama. Data yang
+              disalin tidak menyertakan Periode dan API_Date.
             </p>
           ) : null}
         </div>
