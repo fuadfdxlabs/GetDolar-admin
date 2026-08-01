@@ -122,9 +122,10 @@ test("keeps raw Adsterra upload tools wired", async () => {
   assert.match(uploader, /CPM dan Revenue sudah pakai koma desimal/);
   assert.match(uploader, /accept="\.csv,text\/csv"/);
   assert.match(uploader, /Salin 6 kolom Adsterra/);
-  assert.match(uploader, /Update Raw_Adsterra otomatis/);
-  assert.match(uploader, /\/api\/raw-adsterra/);
-  assert.match(uploader, /Kolom Periode dan/);
+  assert.match(uploader, /ditempel manual mulai kolom C/);
+  assert.doesNotMatch(uploader, /Update Raw_Adsterra otomatis/);
+  assert.doesNotMatch(uploader, /\/api\/raw-adsterra/);
+  assert.match(uploader, /Periode dan API_Date/);
   assert.match(uploader, /API_Date tidak ikut diganti/);
   assert.match(uploader, /navigator\.clipboard\.writeText/);
   assert.match(uploader, /Belum ada CSV yang diupload/);

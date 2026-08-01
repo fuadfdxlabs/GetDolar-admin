@@ -154,9 +154,7 @@ export function RawAdsterraUploader({
     rows: [],
   });
   const [copyStatus, setCopyStatus] = useState("");
-  const [updateStatus, setUpdateStatus] = useState("");
   const [error, setError] = useState("");
-  const [isUpdating, setIsUpdating] = useState(false);
 
   const stats = useMemo(() => {
     const revenueIndex = findColumnIndex(parsedCsv.headers, [
@@ -214,7 +212,6 @@ export function RawAdsterraUploader({
   const handleFile = async (file?: File) => {
     setError("");
     setCopyStatus("");
-    setUpdateStatus("");
 
     if (!file) {
       return;
@@ -257,48 +254,10 @@ export function RawAdsterraUploader({
     );
   };
 
-  const updateSheet = async () => {
-    if (!rawAdsterraRows.length) {
-      return;
-    }
-
-    setError("");
-    setUpdateStatus("");
-    setIsUpdating(true);
-
-    try {
-      const response = await fetch("/api/raw-adsterra", {
-        body: JSON.stringify({ rows: rawAdsterraRows }),
-        headers: {
-          "content-type": "application/json",
-        },
-        method: "POST",
-      });
-      const result = await response.json();
-
-      if (!response.ok || !result.ok) {
-        throw new Error(result.error || "Gagal update Raw_Adsterra.");
-      }
-
-      setUpdateStatus(
-        `${result.updatedRows || rawAdsterraRows.length} baris berhasil diupdate ke Raw_Adsterra.`,
-      );
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Gagal update Raw_Adsterra.",
-      );
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   const resetUpload = () => {
     setFileName("");
     setParsedCsv({ headers: [], rows: [] });
     setCopyStatus("");
-    setUpdateStatus("");
     setError("");
   };
 
@@ -314,10 +273,10 @@ export function RawAdsterraUploader({
           </p>
           <h3 className="mt-1 text-lg font-semibold">Update Raw Adsterra</h3>
           <p className="mt-1 text-sm leading-6 text-[#607065]">
-            Upload CSV statistik Adsterra, cek preview, lalu salin data untuk
-            ditempel mulai kolom C di sheet {sheetName}. Kolom Periode dan
-            API_Date tidak ikut diganti. CPM dan Revenue otomatis pakai koma
-            desimal.
+            Upload CSV statistik Adsterra, cek preview, lalu salin 6 kolom
+            untuk ditempel manual mulai kolom C di sheet {sheetName}. Kolom
+            Periode dan API_Date tidak ikut diganti. CPM dan Revenue otomatis
+            pakai koma desimal.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -372,27 +331,12 @@ export function RawAdsterraUploader({
 
           <button
             className="h-11 w-full rounded-md bg-[#172019] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-[#607065]"
-            disabled={!rawAdsterraRows.length || isUpdating}
-            onClick={updateSheet}
-            type="button"
-          >
-            {isUpdating ? "Mengupdate..." : "Update Raw_Adsterra otomatis"}
-          </button>
-
-          <button
-            className="h-11 w-full rounded-md border border-[#cbd4c6] px-4 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-45"
             disabled={!hasRows}
             onClick={copyTsv}
             type="button"
           >
             Salin 6 kolom Adsterra
           </button>
-
-          {updateStatus ? (
-            <p className="rounded-md bg-[#e9ffd6] px-3 py-2 text-sm font-semibold text-[#315b18]">
-              {updateStatus}
-            </p>
-          ) : null}
 
           {copyStatus ? (
             <p className="rounded-md bg-[#e9ffd6] px-3 py-2 text-sm font-semibold text-[#315b18]">
